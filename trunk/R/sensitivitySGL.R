@@ -221,7 +221,7 @@
   sample(indx.seq, N, replace=TRUE)
 
 sensitivitySGL <- function(z, s, d, y, beta, tau, time.points, ci=0.95,
-                           selection, groupings, empty.principle.stratum,
+                           selection, groupings, empty.principal.stratum,
                            trigger, ci.method=c("analytic", "bootstrap"),
                            na.rm=FALSE, N.boot=100L,
                            oneSidedTest=FALSE, twoSidedTest=TRUE,
@@ -251,10 +251,10 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points, ci=0.95,
   else if(!selection %in% s)
     ErrMsg <- c(ErrMsg, "value of 'selection' is not included in 's'")
   
-  if(missing(empty.principle.stratum) || is.null(empty.principle.stratum))
-    ErrMsg <- c(ErrMsg, "'empty.principle.stratum' argument must be a two element vector")
-  else if(!all(empty.principle.stratum %in% s))
-    ErrMsg <- c(ErrMsg, "Specified levels of 's' from 'empty.principle.stratum' do not match supplied values of 's'")
+  if(missing(empty.principal.stratum) || is.null(empty.principal.stratum))
+    ErrMsg <- c(ErrMsg, "'empty.principal.stratum' argument must be a two element vector")
+  else if(!all(empty.principal.stratum %in% s))
+    ErrMsg <- c(ErrMsg, "Specified levels of 's' from 'empty.principal.stratum' do not match supplied values of 's'")
 
   if(missing(groupings) || is.null(groupings))
     ErrMsg <- c(ErrMsg, "'groupings' argument must be a two element vector")
@@ -292,9 +292,9 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points, ci=0.95,
 
 
 
-  if(empty.principle.stratum[1L] == selection)
+  if(empty.principal.stratum[1L] == selection)
     z <- ifelse(z == groupings[1L], TRUE, ifelse(z == groupings[2L], FALSE, NA))
-  else if(empty.principle.stratum[2L] == selection)
+  else if(empty.principal.stratum[2L] == selection)
     z <- ifelse(z == groupings[2L], TRUE, ifelse(z == groupings[1L], FALSE, NA))
                 
   d <- d == trigger
@@ -506,7 +506,7 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points, ci=0.95,
                                    tau=tau,
                                    selection=TRUE,
                                    groupings=c(FALSE,TRUE),
-                                   empty.principle.stratum=c(FALSE,TRUE),
+                                   empty.principal.stratum=c(FALSE,TRUE),
                                    trigger=TRUE,
                                    time.points=time.points,
                                    ci=NULL)$SCE)

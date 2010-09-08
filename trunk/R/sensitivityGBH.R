@@ -1,5 +1,5 @@
 sensitivityGBH <- function(z, s, y, beta, selection, groupings,
-                           empty.principle.stratum, ci=0.95,
+                           empty.principal.stratum, ci=0.95,
                            ci.method=c("analytic", "bootstrap"), na.rm=FALSE, 
                            N.boot=100, oneSidedTest = FALSE,
                            twoSidedTest = TRUE)
@@ -41,20 +41,20 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     isSelectionMissing <- missing(selection)
     isGroupingsMissing <- missing(groupings)
-    isEmptyPrincipleStratumMissing <- missing(empty.principle.stratum)
+    isEmptyPrincipalStratumMissing <- missing(empty.principal.stratum)
     
-    if(isEmptyPrincipleStratumMissing) 
-      ErrMsg <- c(ErrMsg, "'empty.principle.stratum' argument must be supplied")
+    if(isEmptyPrincipalStratumMissing) 
+      ErrMsg <- c(ErrMsg, "'empty.principal.stratum' argument must be supplied")
     else {
-      if(is.null(empty.principle.stratum) ||
-         length(empty.principle.stratum) != 2L)
+      if(is.null(empty.principal.stratum) ||
+         length(empty.principal.stratum) != 2L)
       ErrMsg <- c(ErrMsg,
-                  "'empty.principle.stratum' argument must be a two element vector")
+                  "'empty.principal.stratum' argument must be a two element vector")
 
-      if(length(empty.principle.stratum) &&
-         any(is.na(empty.principle.stratum)))
+      if(length(empty.principal.stratum) &&
+         any(is.na(empty.principal.stratum)))
       ErrMsg <- c(ErrMsg,
-                  "'empty.principle.stratum' may not contain a NA")
+                  "'empty.principal.stratum' may not contain a NA")
 
     }
 
@@ -69,10 +69,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
         ErrMsg <- c(ErrMsg,
                     "'selection' argument must be a single element vector")
       
-      if(length(selection) > 0L && !isEmptyPrincipleStratumMissing &&
-         !all((selection %in% empty.principle.stratum) | is.na(selection)))
+      if(length(selection) > 0L && !isEmptyPrincipalStratumMissing &&
+         !all((selection %in% empty.principal.stratum) | is.na(selection)))
         ErrMsg <- c(ErrMsg,
-                    "'selection' value does not appear in specified levels of 's' from 'empty.principle.stratum'")
+                    "'selection' value does not appear in specified levels of 's' from 'empty.principal.stratum'")
     }
 
     if(isGroupingsMissing)
@@ -115,10 +115,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
         ErrMsg <- c(ErrMsg,
                     "argument 's' cannot contain any NA values")
       
-      if(!isEmptyPrincipleStratumMissing &&
-         !all(s %in% empty.principle.stratum | is.na(s)))
+      if(!isEmptyPrincipalStratumMissing &&
+         !all(s %in% empty.principal.stratum | is.na(s)))
         ErrMsg <- c(ErrMsg,
-                    "All values of 's' must match one of the two values in 'empty.principle.stratum'")
+                    "All values of 's' must match one of the two values in 'empty.principal.stratum'")
 
       if(is.null(vectorLength))
         vectorLength <- length(s)
@@ -152,10 +152,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     s <- s == selection
 
     GroupReverse <- FALSE
-    if(empty.principle.stratum[1] == selection) {
+    if(empty.principal.stratum[1] == selection) {
       z <- z == groupings[1]
       GroupReverse <- TRUE
-    } else if(empty.principle.stratum[2] == selection)
+    } else if(empty.principal.stratum[2] == selection)
       z <- z == groupings[2]
   } else {
     GroupReverse <- ci
@@ -266,12 +266,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     if(length(ci.method[ci.method != "bootstrap"]) == 0) {
       infiniteACE.info <- sensitivityHHS(z=z,s=s,y=y, bound=bounds,
                                          selection=TRUE, groupings=c(FALSE, TRUE),
-                                         empty.principle.stratum=c(FALSE, TRUE),
+                                         empty.principal.stratum=c(FALSE, TRUE),
                                          ci=GroupReverse, ci.method=NULL)
     } else {
       infiniteACE.info <- sensitivityHHS(z=z,s=s,y=y, bound=bounds,
                                          selection=TRUE, groupings=c(FALSE, TRUE),
-                                         empty.principle.stratum=c(FALSE,TRUE),
+                                         empty.principal.stratum=c(FALSE,TRUE),
                                          ci=ci, ci.method='analyitic')
     }
 
@@ -416,7 +416,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
         ACE.vals[infiniteIndex] <- sensitivityHHS(z=new.z, s=new.s, y=new.y,
                                                   bound=bounds, selection=TRUE,
                                                   groupings=c(FALSE, TRUE),
-                                                  empty.principle.stratum=c(FALSE, TRUE),
+                                                  empty.principal.stratum=c(FALSE, TRUE),
                                                   ci=GroupReverse,
                                                   ci.method=NULL)$ACE
       
@@ -424,7 +424,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                                            beta=beta[finiteIndex],
                                            selection=TRUE,
                                            groupings=c(FALSE, TRUE),
-                                           empty.principle.stratum=c(FALSE, TRUE),
+                                           empty.principal.stratum=c(FALSE, TRUE),
                                            ci=GroupReverse,
                                            ci.method=NULL)$ACE
 
@@ -445,8 +445,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                           ACE.var=ACE.var[bIndex,, drop=FALSE]), cdfs),
                    class=c("sensitivity2d", "sensitivity"),
                    parameters=list(z0=groupings[1], z1=groupings[2],
-                     selected=selection, s0=empty.principle.stratum[1],
-                     s1=empty.principle.stratum[2]))
+                     selected=selection, s0=empty.principal.stratum[1],
+                     s1=empty.principal.stratum[2]))
   if('bootstrap' %in% ci.method)
     attr(ans, 'N.boot') <- N.boot
   

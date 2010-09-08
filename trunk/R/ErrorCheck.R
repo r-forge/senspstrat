@@ -1,30 +1,30 @@
-.CheckEmptyPrincipleStratum <-function(call=match.call(definition=sys.function(sys.parent()),
+.CheckEmptyPrincipalStratum <-function(call=match.call(definition=sys.function(sys.parent()),
                                          call=sys.call(sys.parent()))){
-  .CheckFunc <- function(empty.principle.stratum, ...) {
-    ## empty.principle.stratum must be
+  .CheckFunc <- function(empty.principal.stratum, ...) {
+    ## empty.principal.stratum must be
     ## 1. not missing
     ## 2. not NULL
     ## 3. a 2 element vector
     ## 4. elements must be diffrent values
     ## 5. cannot be NA
 
-    if(missing(empty.principle.stratum))
-      return("'empty.principle.stratum' argument must be supplied")
+    if(missing(empty.principal.stratum))
+      return("'empty.principal.stratum' argument must be supplied")
 
     ErrMsg <- NULL
-    if(is.null(empty.principle.stratum) ||
-       length(empty.principle.stratum) != 2L)
+    if(is.null(empty.principal.stratum) ||
+       length(empty.principal.stratum) != 2L)
       ErrMsg <- c(ErrMsg,
-                  "'empty.principle.stratum' argument must be a two element vector")
-    else if(empty.principle.stratum[1] == empty.principle.stratum[2])
+                  "'empty.principal.stratum' argument must be a two element vector")
+    else if(empty.principal.stratum[1] == empty.principal.stratum[2])
       ErrMsg <- c(ErrMsg,
-                  "'empty.principle.stratum' argument cannot have the same values for both elements")
+                  "'empty.principal.stratum' argument cannot have the same values for both elements")
     
 
-    if(length(empty.principle.stratum) &&
-       any(is.na(empty.principle.stratum)))
+    if(length(empty.principal.stratum) &&
+       any(is.na(empty.principal.stratum)))
       ErrMsg <- c(ErrMsg,
-                  "'empty.principle.stratum' may not contain a NA")
+                  "'empty.principal.stratum' may not contain a NA")
 
     return(ErrMsg)
   }
@@ -36,12 +36,12 @@
 .CheckSelection <- function(call = match.call(definition=sys.function(sys.parent()),
                       call=sys.call(sys.parent()))) {
   
-  .CheckFunc <- function(selection, s, empty.principle.stratum, ...) {
+  .CheckFunc <- function(selection, s, empty.principal.stratum, ...) {
     ## selection must be
     ## 1. not missing
     ## 2. a single element vector
     ## 3. not NA
-    ## 4. contained in empty.principle.stratum if it exists or contained in
+    ## 4. contained in empty.principal.stratum if it exists or contained in
     ##     s if it exists
     
     if(missing(selection))
@@ -57,15 +57,15 @@
                   "'selection' argument must be a single element vector")
 
     if(length(selection) > 0L) {
-      if(!missing(empty.principle.stratum)) {
-        if(!all((selection %in% empty.principle.stratum) | is.na(selection)))
+      if(!missing(empty.principal.stratum)) {
+        if(!all((selection %in% empty.principal.stratum) | is.na(selection)))
       ErrMsg <- c(ErrMsg,
-                  "'selection' value does not appear in specified levels of 's' from 'empty.principle.stratum'")
+                  "'selection' value does not appear in specified levels of 's' from 'empty.principal.stratum'")
 
       } else if(!missing(s)) {
         if(!all((selection %in% s) | is.na(selection)))
         ErrMsg <- c(ErrMsg,
-                    "'selection' value does not appear in specified levels of 's' from 'empty.principle.stratum'")
+                    "'selection' value does not appear in specified levels of 's' from 'empty.principal.stratum'")
      
       }
     }
@@ -133,8 +133,8 @@
   ## s must be
   ## 1. not missing
   ## 2. cannot contain NAs unless na.rm == TRUE
-  ## 3. all s values must match the values of empty.principle.stratum if exists
-  .CheckFunc <- function(s, empty.principle.stratum, ...) {
+  ## 3. all s values must match the values of empty.principal.stratum if exists
+  .CheckFunc <- function(s, empty.principal.stratum, ...) {
     if(missing(s))
       return("'s' argument must be supplied")
 
@@ -143,10 +143,10 @@
       ErrMsg <- c(ErrMsg,
                   "argument 's' cannot contain any NA values")
 
-    if(!missing(empty.principle.stratum) &&
-       !all(s %in% empty.principle.stratum | is.na(s)))
+    if(!missing(empty.principal.stratum) &&
+       !all(s %in% empty.principal.stratum | is.na(s)))
       ErrMsg <- c(ErrMsg,
-                  "All values of 's' must match one of the two values in 'empty.principle.stratum'")
+                  "All values of 's' must match one of the two values in 'empty.principal.stratum'")
 
     return(ErrMsg)
   }

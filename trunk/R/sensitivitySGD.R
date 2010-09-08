@@ -206,7 +206,7 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
 
     if(length(unique(s[!is.na(s)])) > 2L)
       ErrMsg <- c(ErrMsg,
-                  "All values of 's' must match one of the two values in 'empty.principle.stratum'")
+                  "All values of 's' must match one of the two values in 'empty.principal.stratum'")
 
     
     if(length(unique(d[!is.na(d)])) > 2L)
