@@ -437,10 +437,10 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points, ci=0.95,
     VmF0 <- V - KM0$Fas
 
     Omega[1, b.col1] <- rowSums(VmF0 * (1-p0))
-    sumCrossUpperTri(Omega[b.col1,b.col1]) <- VmF0
+    .sumCrossUpperTri(Omega[b.col1,b.col1]) <- VmF0
     
     ## Fold Omega
-    Omega <- foldUpperTri(Omega)
+    Omega <- .foldUpperTri(Omega)
 
     ## populate Gamma matrix
     diag(Gamma) <- rep(c(-N0, -N1, -n0), times=c(1,1,len.t0))

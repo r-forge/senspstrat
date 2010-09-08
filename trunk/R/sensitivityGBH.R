@@ -347,10 +347,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                  s*(mu0[i]-p0*y/(p1*(exp(-beta[i]*y-alphahat[i])+1)))*(1-z),
                  s*(mu1-y)*z)
       
-      sumCrossUpperTri(Omega) <- U
+      .sumCrossUpperTri(Omega) <- U
 
       Omega <- Omega/N
-      Omega <- foldUpperTri(Omega)
+      Omega <- .foldUpperTri(Omega)
       
       Gamma <- matrix(colSums(cbind(1-z,
                                     0,
