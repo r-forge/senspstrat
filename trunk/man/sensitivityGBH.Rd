@@ -153,12 +153,14 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
 }
 \examples{
 data(vaccine.trial)
-ans<-sensitivityGBH(z=treatment,s=hiv.outcome,y=logVL,
+ans<-with(vaccine.trial,
+          sensitivityGBH(z=treatment,s=hiv.outcome,y=logVL,
                     beta=c(0,.25,.5,.75,1,1.25,1.5),
                     selection="infected",
                     groupings=c("placebo","vaccine"),
                     empty.principal.stratum=c("not infected","infected"),
                     N.boot=1000)
+         )
 ans
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
