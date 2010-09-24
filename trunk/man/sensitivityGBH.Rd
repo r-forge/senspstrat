@@ -1,7 +1,7 @@
 \name{sensitivityGBH}
 \alias{sensitivityGBH}
 \title{
-  Sensitivity analysis using the GBH method.
+  Principal stratification sensitivity analysis.
 }
 \description{
   Performs a sensitivity analysis using the method described in Gilbert,
@@ -73,7 +73,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   }
 }
 \details{
-  Performs a sensitivity anlaysis estimating the average causal effect
+  Performs a sensitivity analysis estimating the average causal effect
   among those who would have been selected regardless of treatment
   assignment (ACE).  The method assumes no interference (i.e., potential outcomes of all
   subjects are unaffected by treatment assignment of other subjects),
@@ -104,8 +104,8 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   \item{ACE.ci}{
     vector; confidence interval of ACE determined by
     quantiles of bootstrap if \code{ci.method} includes
-    \dQuote{bootstrap}.  Otherwise calculated using analytic varance
-    and large sample normal approximation.
+    \dQuote{bootstrap}.  Otherwise calculated using analytic variance
+    with large sample normal approximation.
   }
   \item{ACE.var}{
     vector; estimated variance of ACE.
@@ -120,16 +120,16 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     vector of unique \code{y} values in the first group.
   }
   \item{Fas0}{
-    matrix of estimated emprical distribution function values for
-    \code{y} in the first group in the always selected principal
+    matrix of estimated empirical distribution function values for
+    \code{y0} in the first group in the always selected principal
     stratum. Pr(Y(g0) <= y0|S(g0)=S(g1)=selection; beta)
   }
   \item{y1}{
     vector of unique \code{y} values in the second group.
   }
   \item{Fas1}{
-    matrix of estimated emprical distribution function values for
-    \code{y} in the second group in the always selected principal
+    matrix of estimated empirical distribution function values for
+    \code{y1} in the second group in the always selected principal
     stratum.  Pr(Y(g1) <= y1|S(g0)=S(g1)=selection; beta)
   }
 }
@@ -165,4 +165,4 @@ ans
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{design}
+

@@ -2,12 +2,12 @@
 \alias{sensitivitySGL}
 \title{principal stratification sensitivity analysis with time to event data}
 \description{
-  principal stratification sensitivity analysis with time to event data
+  Principal stratification sensitivity analysis with time to event data
   using the method described by Shepherd, Gilbert, and Lumley (2007).
 }
 \usage{
 sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
-               groupings, empty.principle.stratum, ci=0.95,
+               groupings, empty.principal.stratum, ci=0.95,
                ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
                N.boot = 100L, oneSidedTest = FALSE, twoSidedTest = TRUE,
                verbose = getOption("verbose"))
@@ -25,7 +25,7 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
     be \code{NA} for unselected records.
   }
   \item{y}{
-    vector; the length of time from selection until event (d) or
+    vector; the length of time from selection until event (\code{d}) or
     censoring.
     Can be \code{NA} for unselected records.
   }
@@ -35,7 +35,7 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
   }
   \item{tau}{
     maximum observed follow-up time after selection.  Selection weights
-    are constant for t>tau.
+    are constant for t>\code{tau}.
   }
   \item{time.points}{
     vector; time points, t, at which SCE(t) will be estimated.
@@ -63,7 +63,7 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
     numeric vector; confidence interval level, defaults to 0.95.
   }
   \item{ci.method}{
-    character;  method by which the convidence interval and
+    character;  method by which the confidence interval and
     variance are calculated.  Can be \dQuote{analytic} or
     \dQuote{bootstrap}. 
   }
@@ -72,8 +72,8 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
     values should be removed from the data set.
   }
   \item{N.boot}{
-    integer; number of bootstrap repitions that will be run when running with
-    \code{ci.method} equal to \dQuote{bootstrap}.
+    integer; number of bootstrap repetitions that will be run when 
+    \code{ci.method} includes \dQuote{bootstrap}.
   }
   \item{oneSidedTest}{
     logical.  Return a one sided confidence interval for
@@ -88,32 +88,63 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
   }
 }
 \details{
+  Performs a sensitivity analysis estimating the \dQuote{survival causal
+    effect} among those who would have been selected regardless of
+  treatment assignment (SCE).  The method assumes no interference (i.e.,
+  potential outcomes of all subjects are unaffected by treatment
+  assignment of other subjects), ignorable (i.e., random) treatment
+  assignment, monotonicity (i.e., one of the principal strata is
+  empty), and independent censoring (i.e., time from selection to
+  event is independent of time from selection until censoring).  SCE is
+  then identified by assuming a value of the sensitivity parameter beta,
+  where exp(beta) has an odds ratio interpretation (see help for
+  sensitivityGBH).  Given selection in one treatment arm, the
+  probability of selection if in the other treatment arm is assumed to be constant for
+  for T(z)>tau.  
   
+  SCE is computed at user specified time points.  
+  Specifying beta=\code{-Inf} or
+  beta=\code{Inf} estimates the bounds for SCE.
 }
 \value{
-  object of class \code{sensitivity3d}
+  object of class \code{sensitivity2d}
 
   \item{SCE}{
-    array; Calculated values of SCE for all combinations of the values from
-    \code{phi}/\code{Pi}/\code{psi}, and
-    \code{time.points}.  Array dimentions are
-    \code{length(time.points)}, \code{length(psi)}.
-  }
-  \item{beta}{
-    beta values used.
-  }
-  \item{psi}{
-    phi values used.
+    SCE(t)=Pr(T(g0)<=t|S(g0)=S(g1)=selection) - Pr(T(g1)<=t|S(g0)=S(g1)=selection).
+    Array of the estimated SCE at all \code{time.points} for specified
+    beta values.  Array dimensions are  \code{length(time.points)} by \code{length(beta)}.
   }
   \item{SCE.ci}{
-    array; Confindence interval of the SCE value.  Confidence interval
+    array; confidence interval of SCE
     determined by \code{quantile} if using  \code{ci.method}
-    \dQuote{bootstrap}.  Other wise calculated using analytic
-    varance. Array dimentions the same as element \code{SCE}.
+    \dQuote{bootstrap}.  Otherwise calculated using analytic
+    variance with large sample normal approximation. Array dimentions the same as element \code{SCE}.
   }
   \item{SCE.var}{
-    array; Variance of the SCE value.  Array dimentions the same as
+    array; estimated variance of SCE.  Array dimentions the same as
     element \code{SCE}.
+  }
+  \item{beta}{
+    vector of user-specified beta values
+  }
+  \item{alphahat}{
+    vector of estimated values of alpha
+  }
+  \item{y0}{
+    vector of unique event times in the first group.
+  }
+  \item{Fas0}{
+    matrix of estimated empirical distribution function values for
+    \code{y0} in the first group in the always selected principal
+    stratum. Pr(Y(g0) <= y0|S(g0)=S(g1)=selection; beta)
+  }
+  \item{y1}{
+    vector of unique event times in the second group.
+  }
+  \item{Fas1}{
+    matrix of estimated empirical distribution function values for
+    \code{y1} in the second group in the always selected principal
+    stratum.  Pr(Y(g1) <= y1|S(g0)=S(g1)=selection; beta)
   }
 }
 \references{
@@ -134,7 +165,7 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
 }
 
 \seealso{
-  \code{\link{sensitivitySGD}}, \code{\link{sensitivityJR}}
+  \code{\link{sensitivityGBH}}, \code{\link{sensitivityHHS}}, \code{\link{sensitivitySGD}}, 
   \code{\link{Surv}}
 }
 
@@ -150,7 +181,4 @@ sens.time<-with(vaccine.trial,
                           N.boot=1000)
                )
 sens.time
-
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{design }
+}
