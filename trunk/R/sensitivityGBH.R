@@ -254,7 +254,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     mu0 <- colSums(y0.uniq * dFas0)
 
-    Fas0[,finiteIndex] <- apply(X=dFas0, MARGIN=2, FUN=cumsum)
+    Fas0[finiteIndex] <- lapply(X=as.data.frame(dFas0), FUN=function(x) {
+      x <- cumsum(x)
+      stepfun(y0.uniq, y=c(0, x))
+    })
 
     if(GroupReverse)
       ACE[finiteIndex] <- mu0 - mu1
@@ -272,13 +275,13 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       infiniteACE.info <- sensitivityHHS(z=z,s=s,y=y, bound=bounds,
                                          selection=TRUE, groupings=c(FALSE, TRUE),
                                          empty.principal.stratum=c(FALSE,TRUE),
-                                         ci=ci, ci.method='analyitic')
+                                         ci=ci, ci.method='analytic')
     }
 
     if(GroupReverse) 
-      Fas0[,infiniteIndex] <- infiniteACE.info$Fas1
+      Fas0[infiniteIndex] <- infiniteACE.info$Fas1
     else
-      Fas0[,infiniteIndex] <- infiniteACE.info$Fas0
+      Fas0[infiniteIndex] <- infiniteACE.info$Fas0
     
     ACE[infiniteIndex] <- infiniteACE.info$ACE
 
@@ -287,9 +290,9 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
   cdfs <- list(beta=beta[bIndex], alphahat=alphahat[bIndex])
   if(GroupReverse)
-    cdfs <- c(cdfs, list(y0=y1.uniq, Fas0=Fas1, y1=y0.uniq, Fas1=Fas0[,bIndex]))
+    cdfs <- c(cdfs, list(y0=y1.uniq, Fas0=Fas1, y1=y0.uniq, Fas1=Fas0[bIndex]))
   else
-    cdfs <- c(cdfs, list(y0=y0.uniq, Fas0=Fas0[,bIndex], y1=y1.uniq, Fas1=Fas1))
+    cdfs <- c(cdfs, list(y0=y0.uniq, Fas0=Fas0[bIndex], y1=y1.uniq, Fas1=Fas1))
 
   if(is.null(ci) || isSlaveMode) {
     return(c(list(ACE=ACE), cdfs))
@@ -397,7 +400,6 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       ACE[i] + norm * sqrt.ACE.var[i]
     }
 
-    print(ci.probs)
     ACE.ci[,'analytic',] <- outer(seq_along(ACE), qnorm(ci.probs),
                                   FUN=calculateCi, ACE=ACE,
                                   sqrt.ACE.var=sqrt(ACE.var[,'analytic']))

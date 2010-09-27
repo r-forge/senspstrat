@@ -95,7 +95,7 @@ print.sensitivity2d <- function(x, ...) {
     print(x$ACE.ci[,"bootstrap",])
   }
 
-  NULL
+  invisible(NULL)
 }
 
 

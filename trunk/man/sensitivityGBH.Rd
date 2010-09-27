@@ -163,6 +163,7 @@ ans<-with(vaccine.trial,
          )
 ans
 }
+\keyword{design}
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
 

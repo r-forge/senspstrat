@@ -103,22 +103,14 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   if(!isSlaveMode) {
     ## Not running a boot strap mode
     ## Run error checks on variables.
-    ErrMsg <- c(.CheckEmptyPrincipalStratum(),
-                .CheckSelection(),
-                .CheckGroupings(),
-                .CheckZ(),
-                .CheckS(),
-                .CheckY())
+    ErrMsg <- c(.CheckEmptyPrincipalStratum(empty.principal.stratum),
+                .CheckSelection(selection, s, empty.principal.stratum),
+                .CheckGroupings(groupings),
+                .CheckLength(z=z, s=s, y=y),
+                .CheckZ(z, groupings, na.rm),
+                .CheckS(s, empty.principal.stratum, na.rm),
+                .CheckY(y, s, selection))
 
-    ## check that length is the same
-    var.len <- c(if(!missing(z)) length(z),
-                 if(!missing(s)) length(s),
-                 if(!missing(y)) length(y))
-
-    if(length(unique(var.len)) > 1L)
-        ErrMsg <- c(ErrMsg,
-                    "'z', 's', 'y' are not all the same length")      
-    
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
 
@@ -182,9 +174,13 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
     ACE['lower'] <- LowerObj$ACE
     FnAs0['lower'] <- LowerObj$FnAs0
   }
-  
+
   if(isSlaveMode) {
-    return(list(ACE=ACE))
+    if(GroupReverse) {
+      return(list(ACE=ACE, Fas0=datObj$Fn1, Fas1=FnAs0))
+    } else {
+      return(list(ACE=ACE, Fas0=FnAs0, Fas1=datObj$Fn1))
+    }      
   }
 
   if(GroupReverse) {

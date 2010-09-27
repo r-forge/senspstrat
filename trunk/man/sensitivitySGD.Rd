@@ -195,7 +195,7 @@ sens.analysis<-with(vaccine.trial,
                           time.points=c(2,3), selection="infected",
                           trigger="initiated ART",
                           groupings=c("placebo","vaccine"), ci=.95,
-                          N.boot=500)
+                          ci.method="bootstrap", N.boot=500)
                )
 sens.analysis
 }

@@ -393,7 +393,7 @@ sensitivitySGDFollowup <- function(z, s.star, v, d, y, beta0, beta1,
       needFiles <- (SCE.length %/% colsPerFile)
       remainder <- SCE.length %% colsPerFile
 
-      filesNCols <- rep(c(colsPreFile, remainder), times=c(needFiles, remainder > 0L))
+      filesNCols <- rep(c(colsPerFile, remainder), times=c(needFiles, remainder > 0L))
       readWidths <- filesNCols*recordWidth
       outFilenames <- sprintf("%s_split_%0*d", tmpfile,
                               nchar(length(readWidths)),
