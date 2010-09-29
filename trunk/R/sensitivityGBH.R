@@ -12,8 +12,9 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     funCall <- match.call()
     funCall$beta <- c("upper", "lower")[match(beta, c(-Inf, Inf), nomatch=0)]
     names(funCall)[names(funCall) == "beta"] <- "bound"
+    funCall[[1]] <- as.name("sensitivityHHS")
 
-    return(eval(c))
+    return(eval(funCall, envir=parent.frame()))
   }
 
   if(na.rm == TRUE) {
