@@ -109,6 +109,97 @@
   return(ErrMsg)
 }
 
+.CheckTau <- function(tau) {
+  ## for argument tau
+  ## 1. it must not be missing
+  ## 2. it must be numeric
+  ## 3. it must have at least 1 element
+  ## 4. it can have no more then 2 elements
+  ## 5. no elements may be NA
+  
+  if(missing(tau))
+    return("'tau' argument must be supplied")
+
+  ErrMsg <- NULL
+  if(!is.numeric(tau))
+    ErrMsg <- c(ErrMsg, "'tau' must be a numeric")
+
+  if(length(tau) < 1 || length(tau) > 2)
+    ErrMsg <- c(ErrMsg, "'tau' must be a vector of 1 or 2 elements")
+
+  if(any(is.na(tau)))
+    ErrMsg <- c(ErrMsg, "'tau' may not contain any NA values")
+
+  return(ErrMsg)
+}
+
+.CheckPhiPiPsi <- function(phi, Pi, psi, p0, p1) {
+  ## for arguments phi, Pi, and psi
+  ## 1. Only one of these argument may be specified
+  ## 2. the specified argument may not be missing
+  ## 3. the specified argument must have 1 or more values
+  ## 4. Pi must be in range of 0 to 1
+  ## 5. phi must be in range of 0 to 1
+  ## 6. phi, Pi, psi must be numeric
+
+  if(sum(c(missing(phi), missing(Pi), missing(psi))) == 0)
+    return("one of arguments 'phi', 'Pi', or 'psi' must be specified")
+
+  ErrMsg <- NULL
+  if(sum(c(missing(phi), missing(Pi), missing(psi)) > 1))
+    ErrMsg <- c(ErrMsg,
+                "only one of the arguments 'phi', 'Pi', or 'psi' may be specified")
+
+  if(!missing(phi) && !is.null(phi)) {
+    if(length(phi) < 1)
+      ErrMsg <- c(ErrMsg, "'phi' must have 1 or more elements")
+                  
+    if(any(is.na(phi)))
+      ErrMsg <- c(ErrMsg,
+                  "'phi' may not contain NA values")
+
+    if(!is.numeric(phi))
+      ErrMsg <- c(ErrMsg, "'phi' must be a numeric vector")
+    
+    if(!missing(p0) && !missing(p1) && any(phi > min(p0, p1)/p1 | phi < max(0, p0 + p1 - 1)/p1))
+        ErrMsg <- c(ErrMsg, "values of 'phi' must be constitant with data provided 'phi > min(p0, p1)/p1, phi < max(0, p0 + p1 - 1)/p1'")
+    else if(any(phi > 1 | phi < 0))
+        ErrMsg <- c(ErrMsg, "values of 'phi' must be between 0 and 1")
+
+  }
+    
+  if(!missing(Pi) && !is.null(Pi)) {
+    if(length(Pi) < 1)
+      ErrMsg <- c(ErrMsg, "'Pi' must have 1 or more elements")
+                  
+    if(any(is.na(Pi)))
+      ErrMsg <- c(ErrMsg,
+                  "'Pi' may not contain NA values")
+
+    if(!is.numeric(Pi))
+      ErrMsg <- c(ErrMsg, "'Pi' must be a numeric vector")
+
+    if(!missing(p0) && !missing(p1) && any(Pi > min(p0,p1) | Pi < max(0,p0 + p1 - 1)))
+      ErrMsg <- c(ErrMsg, "values of 'Pi' must be constitant with data provided 'Pi > min(p0,p1), Pi < max(0,p0 + p1 - 1)'")
+    else if(Pi > 1 | Pi < 0)
+      ErrMsg <- c(ErrMsg, "values of 'Pi' between 0 and 1")
+  }
+
+  if(!missing(psi) && !is.null(psi)) {
+    if(length(psi) < 1)
+      ErrMsg <- c(ErrMsg, "'psi' must have 1 or more elements")
+                  
+    if(any(is.na(psi)))
+      ErrMsg <- c(ErrMsg,
+                  "'psi' may not contain NA values")
+
+    if(!is.numeric(psi))
+      ErrMsg <- c(ErrMsg, "'psi' must be a numeric vector")
+  }
+
+  return(ErrMsg)
+}
+  
 .CheckLength <- function(z, s, d, y) {
   ## for vectors z, s, d, and y
   ## 1. must be same length

@@ -159,12 +159,13 @@ ans<-with(vaccine.trial,
                     selection="infected",
                     groupings=c("placebo","vaccine"),
                     empty.principal.stratum=c("not infected","infected"),
-                    N.boot=1000)
+                    N.boot=100)
          )
 ans
 \dontshow{
 stopifnot(is.list(ans))
-stopifnot(inherits(ans,"sensitivity2d"))
+stopifnot(inherits(ans,"sensitivity"))
+stopifnot(inherits(ans,"sensitivity.0d"))
 }
 
 ans<-with(vaccine.trial,
@@ -174,12 +175,13 @@ ans<-with(vaccine.trial,
                     groupings=c("placebo","vaccine"),
                     empty.principal.stratum=c("not infected","infected"),
                     ci.method="bootstrap",
-                    N.boot=1000)
+                    N.boot=100)
          )
 ans
 \dontshow{
 stopifnot(is.list(ans))
-stopifnot(inherits(ans,"sensitivity2d"))
+stopifnot(inherits(ans,"sensitivity"))
+stopifnot(inherits(ans,"sensitivity.0d"))
 }
 ans<-with(vaccine.trial,
           sensitivityGBH(z=treatment,s=hiv.outcome,y=logVL,
@@ -188,12 +190,13 @@ ans<-with(vaccine.trial,
                     groupings=c("placebo","vaccine"),
                     empty.principal.stratum=c("not infected","infected"),
                     ci.method="bootstrap",
-                    N.boot=1000)
+                    N.boot=100)
          )
 ans
 \dontshow{
 stopifnot(is.list(ans))
-stopifnot(inherits(ans,"sensitivity2d"))
+stopifnot(inherits(ans,"sensitivity"))
+stopifnot(inherits(ans,"sensitivity.0d"))
 }
 }
 \keyword{design}

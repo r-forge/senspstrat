@@ -1,7 +1,7 @@
 Package: sensitivityPStrat
 Type: Package
 Title: Principal Stratification Sensitivity Analysis Functions
-Version: 1.0-2
+Version: 1.0-3
 Date: 2010-09-29
 Author: Charles Dupont
 Maintainer: Charles Dupont <charles.dupont@vanderbilt.edu>

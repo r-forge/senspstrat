@@ -205,12 +205,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   ci.probs <- unique(sort(ci.probs))
   ci.probsLen <- length(ci.probs)
 
-  ACE.ci.dim <- c(ACE.dim, length(ci.method), ci.probsLen)
+  ACE.ci.dim <- c(ACE.dim, ci.probsLen, length(ci.method))
   ACE.ci.length <- prod(ACE.ci.dim)
   ACE.ci.dimnames <- c(list(ACE.dimnames),
-                       list(ci.method=ci.method,
-                            ci.probs= sprintf("%s%%",
-                              as.character(ci.probs*100))))
+                       list(ci.probs= sprintf("%s%%",
+                              as.character(ci.probs*100)),
+                            ci.method=ci.method))
 
   ACE.ci <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
                   dimnames=ACE.ci.dimnames)
@@ -289,7 +289,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       ACE[i] + norm * sqrt.ACE.var[i]
     }
 
-    ACE.ci[,'analytic',] <- outer(seq_along(ACE), qnorm(ci.probs),
+    ACE.ci[,,'analytic'] <- outer(seq_along(ACE), qnorm(ci.probs),
                                   FUN=calculateCi, ACE=ACE,
                                   sqrt.ACE.var=sqrt(ACE.var[,'analytic']))
   }
@@ -326,7 +326,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                   function(ACE.vals, probs) c(var(ACE.vals),
                                               quantile(ACE.vals, probs=probs)),
                   probs=ci.probs)
-    ACE.ci[,'bootstrap',] <- t(ans[-1,])
+    ACE.ci[,,'bootstrap'] <- t(ans[-1,])
     ACE.var[,'bootstrap'] <- ans[1,]
   }
 
@@ -334,7 +334,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   ans <- structure(c(list(ACE=ACE[bIndex],
                           ACE.ci=ACE.ci[bIndex,,,drop=FALSE],
                           ACE.var=ACE.var[bIndex,, drop=FALSE]), cdfs),
-                   class=c("sensitivity2d", "sensitivity"),
+                   class=c("sensitivity.0d", "sensitivity"),
                    parameters=list(z0=groupings[1], z1=groupings[2],
                      selected=selection, s0=empty.principal.stratum[1],
                      s1=empty.principal.stratum[2]))

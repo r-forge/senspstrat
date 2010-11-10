@@ -363,8 +363,8 @@ sensitivitySGDFollowup <- function(z, s.star, v, d, y, beta0, beta1,
                          FUN=function(x) return(c(var(x),
                            quantile(x, probs=ci.probs))))
 
-      ansAttrs$bootReps <- N.boot
-      ansAttrs$ActualBootReps <- nrow(vals)
+      ansAttrs$N.boot <- N.boot
+      ansAttrs$N.bootActual <- nrow(vals)
       SCE.boot <- list(SCE.var = val.stats[1L,,drop=FALSE],
                        SCE.ci = val.stats[-1L,,drop=FALSE])
     } else {

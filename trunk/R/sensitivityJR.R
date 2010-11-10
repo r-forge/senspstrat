@@ -31,67 +31,44 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
 
   if(!isSlaveMode) {
-
-    if(na.rm == TRUE) {
-      naIndex <- !(is.na(s) | is.na(z))
-
-      z <- z[naIndex]
-      s <- s[naIndex]
-      y <- y[naIndex]
-    }
+    ## Not running a boot strap mode
+    ## Run error checks on variables.
+    ErrMsg <- NULL
+    ErrMsg <- c(.CheckSelection(selection, s),
+                .CheckGroupings(groupings),
+                .CheckPhiPiPsi(phi=phi, Pi=Pi, psi=psi),
+                .CheckLength(z=z, s=s, y=y),
+                .CheckZ(z, groupings, na.rm),
+                .CheckS(s, na.rm=na.rm),
+                .CheckY(y, s, selection))
     
-    ErrMsg <- character(0)
-    if(missing(selection) || is.null(selection))
-      ErrMsg <- c(ErrMsg, "'selection' argument must be a single element vector")
-    else if(!selection %in% s)
-      ErrMsg <- c(ErrMsg, "value of 'selection' is not included in 's'")
-    
-    if(missing(groupings) || is.null(groupings))
-      ErrMsg <- c(ErrMsg, "'groupings' argument must be a two element vector")
-    else if(!all(groupings %in% z))
-      ErrMsg <- c(ErrMsg, "Specified levels of 'z' from 'groupings' do not match supplied values of 'z'")
-
-    if(any(is.na(z)))
-      ErrMsg <- c(ErrMsg, "argument 'z' cannot contain any NA values")
-    else if(length(unique(z)) != 2)
-      ErrMsg <- c(ErrMsg, "argument 'z' can only contain 2 unique values")
-
-    
-    if(any(is.na(s)))
-      ErrMsg <- c(ErrMsg, "argument 's' cannot contain any NA values")
-    else if(length(unique(s)) > 2)
-      ErrMsg <- c(ErrMsg, "argument 's' can contain at most 2 unique values")
-
-    ParamConflict <- c(!missing(psi) && !is.null(psi),
-                       !missing(Pi) && !is.null(Pi),
-                       !missing(phi) && !is.null(phi))
-
-    if(sum(ParamConflict) > 1)
-      ErrMsg <- c(ErrMsg,
-                  "only one of 'psi', 'Pi', or 'phi' can be specified")
-    else if(sum(ParamConflict) < 1)
-      ErrMsg <- c(ErrMsg,
-                  "one of 'psi', 'Pi', or 'phi' must be specified")
-
-    if(length(ErrMsg) > 0)
+    if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
 
-    s <- s == selection
-
-    z <- z == groupings[2]
-    
     if(na.rm == TRUE) {
-      naIndex <- !(is.na(s) | is.na(z) | (s & is.na(y)))
+      naIndex <- !(is.na(s) | is.na(z) | (s & (is.na(d) | is.na(y))))
+
       z <- z[naIndex]
       s <- s[naIndex]
+      d <- d[naIndex]
       y <- y[naIndex]
     }
+
+    s <- s == selection
+    
+    z <- z == groupings[2L]
+
 
     if(any(is.na(z) | is.na(s)))
       stop("s, z cannot contain any NA values")
     
     if(any(s & is.na(y)))
       stop("selected y values cannot be NA")
+
+    ErrMsg <- .CheckPhiPiPsi(phi=phi, Pi=Pi, psi=psi, p0=sum(!z & s)/sum(!z), p1=sum(z & s)/sum(z))
+
+    if(length(ErrMsg) > 0L)
+      stop(paste(ErrMsg, collapse="\n  "))
   }
   
   z0.s1 <- !z & s
@@ -153,7 +130,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   ACE.length <- prod(ACE.dim)
   ACE.dimnames <- list(beta0=format(beta0, trim=TRUE),
                        beta1=format(beta1, trim=TRUE),
-                       Pi = format(Pi, trim=TRUE))
+                       Pi = format(Pi, trim=TRUE, digits=4, drop0trailing=TRUE))
 
   ACE <- array(numeric(ACE.length), dim=ACE.dim, dimnames=ACE.dimnames)
 
@@ -260,7 +237,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
 
   cdfs<-list(beta0=beta0, alphahat0=alphahat0, Fas0=FnAs0,
              beta1=beta1, alphahat1=alphahat1, Fas1=FnAs1,
-             Pi=Pi, phi=phi, psi=psi)
+             phi=phi, Pi=Pi, psi=psi)
 
   if(is.null(ci))
     return(c(list(ACE=ACE), cdfs))
@@ -410,7 +387,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   }
 
   return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var),
-                     cdfs), class="sensitivity3d", N.boot=N.boot,
+                     cdfs), class=c("sensitivity.0d", "sensitivity"), N.boot=N.boot,
                    parameters=list(z0=groupings[1], z1=groupings[2],
                      selected=selection)))
 }

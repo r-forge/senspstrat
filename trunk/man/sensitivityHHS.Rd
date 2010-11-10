@@ -144,7 +144,7 @@ est.bounds<-with(vaccine.trial,
                  sensitivityHHS(z=treatment, s=hiv.outcome, y=logVL,
                      selection="infected", groupings=c("placebo","vaccine"),
                      empty.principal.stratum=c("not infected","infected"),
-                     N.boot=1000)
+                     N.boot=100)
                 )
 est.bounds
 }

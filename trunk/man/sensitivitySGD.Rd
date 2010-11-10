@@ -12,7 +12,7 @@
 \usage{
 sensitivitySGD(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                time.points, selection, trigger, groupings,
-               ci, ci.method = c("analytic", "bootstrap"),
+               ci=0.95, ci.method = c("bootstrap", "analytic"),
                na.rm = FALSE, N.boot = 100L, N.events = NULL,
                oneSidedTest = FALSE, twoSidedTest = TRUE, inCore = TRUE,
                verbose = getOption("verbose"), colsPerFile = 1000L)
@@ -195,7 +195,7 @@ sens.analysis<-with(vaccine.trial,
                           time.points=c(2,3), selection="infected",
                           trigger="initiated ART",
                           groupings=c("placebo","vaccine"), ci=.95,
-                          ci.method="bootstrap", N.boot=500)
+                          ci.method="bootstrap", N.boot=100)
                )
 sens.analysis
 }

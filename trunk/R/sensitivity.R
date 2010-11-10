@@ -30,8 +30,9 @@
   x
 }
 
-print.sensitivity1d <- function(x, ...) {
+print.sensitivity.0d <- function(x, ...) {
   labs <- attr(x, "parameters")
+
   if(all(c('s0','s1') %in% names(labs))) {
     cat("Empty Principle Stratum: ",
         paste("S(", labs$z0, ") = ",labs$s0, ", S(", labs$z1, ") = ",
@@ -46,45 +47,17 @@ print.sensitivity1d <- function(x, ...) {
   ACE <- x$ACE
   print(ACE)
 
-  ci.method <- dimnames(x$ACE.ci)[['ci.method']]
-  
-  cat("\nACE confidence interval:\n")
-  if("analytic" %in% ci.method) {
-    cat("By analytic method\n")
-    print(x$ACE.ci[,"analytic",])
-  }
-
-  if(all(c("bootstrap", "analytic") %in% ci.method))
-     cat("\n")
-  
-  if("bootstrap" %in% ci.method) {
-    cat("By bootstrap method, N = ", attr(x, 'N.boot'), "\n",sep='')
-    print(x$ACE.ci[,"bootstrap",])
-  }
-}
-
-print.sensitivity2d <- function(x, ...) {
-  labs <- attr(x, "parameters")
-  if(all(c('s0','s1') %in% names(labs))) {
-    cat("Empty Principle Stratum: ",
-        paste("S(", labs$z0, ") = ",labs$s0, ", S(", labs$z1, ") = ",
-              labs$s1, sep=''),
-        "\n")
-  }
-  
-  cat("ACE:\t", paste("E(Y(", labs$z1, ") - Y(", labs$z0,") | S(", labs$z0,
-                      ") = S(", labs$z1, ") = ",labs$selected,")", sep=''),
-      "\n")
-
-  ACE <- x$ACE
-  print(ACE)
-
-  ci.method <- dimnames(x$ACE.ci)[['ci.method']]
+  ci.dim <- which(names(dimnames(x$ACE.ci)) == "ci.method")
+  ci.method <- dimnames(x$ACE.ci)[[ci.dim]]
+  ci.slice <- slice.index(x$ACE.ci, ci.dim)
+  newdim <- dim(x$ACE.ci)[-ci.dim]
+  newdimnames <- dimnames(x$ACE.ci)[-ci.dim]
 
   cat("\nACE confidence interval:\n")
   if("analytic" %in% ci.method) {
     cat("By analytic method\n")
-    print(x$ACE.ci[,"analytic",])
+    print(array(x$ACE.ci[ci.slice == which(ci.method == "analytic")],
+                dim=newdim, dimnames=newdimnames))
   }
 
   if(all(c("bootstrap", "analytic") %in% ci.method))
@@ -92,14 +65,56 @@ print.sensitivity2d <- function(x, ...) {
   
   if("bootstrap" %in% ci.method) {
     cat("By bootstrap method, N = ", attr(x, 'N.boot'), "\n",sep='')
-    print(x$ACE.ci[,"bootstrap",])
+    print(array(x$ACE.ci[ci.slice == which(ci.method == "bootstrap")],
+                dim=newdim, dimnames=newdimnames))
   }
 
   invisible(NULL)
 }
 
+print.sensitivity.1d <- function(x, ...) {
+  labs <- attr(x, "parameters")
 
-plot.sensitivity1d <- function(x, xlim, ylim, xlab=expression(beta), ylab='ACE',
+  if(all(c('s0','s1') %in% names(labs))) {
+    cat("Empty Principle Stratum: ",
+        paste("S(", labs$z0, ") = ",labs$s0, ", S(", labs$z1, ") = ",
+              labs$s1, sep=''),
+        "\n")
+  }
+  
+  cat("SCE:\t", paste("E(Y(", labs$z1, ") - Y(", labs$z0,") | S(", labs$z0,
+                      ") = S(", labs$z1, ") = ",labs$selected,")", sep=''),
+      "\n")
+
+  SCE <- x$SCE
+  print(SCE)
+
+  ci.dim <- which(names(dimnames(x$SCE.ci)) == "ci.method")
+  ci.method <- dimnames(x$SCE.ci)[[ci.dim]]
+  ci.slice <- slice.index(x$SCE.ci, ci.dim)
+  newdim <- dim(x$SCE.ci)[-ci.dim]
+  newdimnames <- dimnames(x$SCE.ci)[-ci.dim]
+
+  cat("\nSCE confidence interval:\n")
+  if("analytic" %in% ci.method) {
+    cat("By analytic method\n")
+    print(array(x$SCE.ci[ci.slice == which(ci.method == "analytic")],
+                dim=newdim, dimnames=newdimnames))
+  }
+
+  if(all(c("bootstrap", "analytic") %in% ci.method))
+    cat("\n")
+  
+  if("bootstrap" %in% ci.method) {
+    cat("By bootstrap method, N = ", attr(x, 'N.boot'), "\n",sep='')
+    print(array(x$SCE.ci[ci.slice == which(ci.method == "bootstrap")],
+                dim=newdim, dimnames=newdimnames))
+  }
+
+  invisible(NULL)
+}
+
+plot.sensitivity.0d <- function(x, xlim, ylim, xlab=expression(beta), ylab='ACE',
                                display = c("analytic", "bootstrap"),
                                col='black', line.col=col, point.col=col,
                                analytic.col="red",
@@ -139,7 +154,7 @@ plot.sensitivity1d <- function(x, xlim, ylim, xlab=expression(beta), ylab='ACE',
   indx <- match(beta.inf, c(-Inf, Inf))
 
   plot.default(x=beta.fin, y=ACE.fin, xlim=xlim, ylim=ylim, type=type,
-               ...)
+               xlab=xlab, ylab=ylab, ...)
   inf.x <- par('usr')[indx] + strwidth("m")/c(2,-2)[indx]
   points(x=inf.x, y=ACE.inf, pch=1, col=point.col)
 
@@ -163,9 +178,8 @@ plot.sensitivity1d <- function(x, xlim, ylim, xlab=expression(beta), ylab='ACE',
   }
 }
 
-plot.sensitivity2d <- function(x, xlim, ylim, xlab=expression(beta),
+plot.sensitivity.1d <- function(x, xlim, ylim, xlab=expression(beta), ylab="SCE",
                                  t.point,
-                                 ylab='SCE',
                                  display = c("analytic", "bootstrap"),
                                  col='black', line.col=col, point.col=col,
                                  analytic.col="red",
@@ -182,18 +196,18 @@ plot.sensitivity2d <- function(x, xlim, ylim, xlab=expression(beta),
   sortIndx <- sort.list(x$beta)
   beta <- x$beta[sortIndx]
   SCE <- x$SCE[sortIndx]
-  SCE.ci <- x$SCE.ci[t.point, sortIndx,,, drop=FALSE]
+  SCE.ci <- x$SCE.ci[sortIndx, t.point,,, drop=FALSE]
 
   finIndx <- is.finite(beta)
   infIndx <- is.infinite(beta)
   
   beta.fin <- beta[finIndx]
   SCE.fin <- SCE[finIndx]
-  SCE.ci.fin <- SCE.ci[t.point, finIndx,,, drop=FALSE]
+  SCE.ci.fin <- SCE.ci[finIndx, t.point,,, drop=FALSE]
 
   beta.inf <- beta[infIndx]
   SCE.inf <- SCE[infIndx]
-  SCE.ci.inf <- SCE.ci[t.point, infIndx,,, drop=FALSE]
+  SCE.ci.inf <- SCE.ci[infIndx, t.point,,, drop=FALSE]
   
   if(missing(ylim)) {
     ylim <- range(c(SCE, SCE.ci))
@@ -206,20 +220,24 @@ plot.sensitivity2d <- function(x, xlim, ylim, xlab=expression(beta),
   indx <- match(beta.inf, c(-Inf, Inf))
 
   plot.default(x=beta.fin, y=SCE.fin, xlim=xlim, ylim=ylim, type=type,
-               ...)
+               xlab=xlab, ylab=ylab, ...)
   inf.x <- par('usr')[indx] + strwidth("m")/c(2,-2)[indx]
   points(x=inf.x, y=SCE.inf, pch=1, col=point.col)
 
   ##  doBootstrap
   if('analytic' %in% display && 'analytic' %in% colnames(x$SCE.var)) {
-    lines(x=beta.fin, y=SCE.ci.fin[t.point,,1,'analytic'], lty=2, col=analytic.line.col)
-    lines(x=beta.fin, y=SCE.ci.fin[t.point,,2,'analytic'], lty=2, col=analytic.line.col)
+    for(i in seq_len(dim(SCE.ci.fin)[[3]])) {
+      lines(x=beta.fin, y=SCE.ci.fin[,t.point,i,'analytic'], lty=2,
+            col=analytic.line.col)
+    }
     points(x=rep.int(inf.x, times=2), y=SCE.ci.inf[t.point,indx,, "analytic"], pch=3, col=analytic.point.col)
   }
 
   if('bootstrap' %in% colnames(x$SCE.var) && 'bootstrap' %in% display) {
-    lines(x=beta.fin, y=SCE.ci.fin[t.point,,1,"bootstrap"], lty=2, col=bootstrap.line.col)
-    lines(x=beta.fin, y=SCE.ci.fin[t.point,,2,"bootstrap"], lty=2, col=bootstrap.line.col)
+    for(i in seq_len(dim(SCE.ci.fin)[[3]])) {
+      lines(x=beta.fin, y=SCE.ci.fin[,t.point,i,'bootstrap'], lty=2,
+            col=analytic.line.col)
+    }
     points(x=rep(inf.x, times=2), y=SCE.ci.inf[t.point,indx,,"bootstrap"], pch=3, col=bootstrap.point.col)
   }
 }

@@ -258,7 +258,7 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   ans <- structure(c(list(ACE=ACE,
                           ACE.ci=ACE.ci,
                           ACE.var=ACE.var), cdfs),
-                   class=c("sensitivity2d", "sensitivity"),
+                   class=c("sensitivity.0d", "sensitivity"),
                    parameters=list(z0=groupings[1], z1=groupings[2],
                      selected=selection, s0=empty.principal.stratum[1],
                      s1=empty.principal.stratum[2]))
