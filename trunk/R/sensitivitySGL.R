@@ -516,13 +516,9 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
 
     SCE.var[,,'bootstrap'] <- SCE.var.boot
 
-    str(SCE.ci.boot)
-    str(SCE.ci)
     SCE.ci[,,,'bootstrap'] <- SCE.ci.boot
   }
-  str(SCE)
-  str(SCE.ci)
-  str(SCE.var)
+
   tpIndex <- match(time.points, timePointsOrig)
   betaIndex <- match(beta, betaOrig)
   ans <- list(SCE=SCE[betaIndex,tpIndex,drop=FALSE],
