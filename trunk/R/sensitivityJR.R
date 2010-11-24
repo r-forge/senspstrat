@@ -91,6 +91,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
 
   ## Calc Pi because it will be needed later
   if(!missing(psi) && !is.null(psi)) {
+    sens.var <- "psi"
     Pi <-
       ifelse(abs(psi) < sqrt(.Machine$double.eps), p0*p1,
              -(sqrt((p1^2-2*p0*p1+p0^2)*exp(2*psi)+p1^2
@@ -102,10 +103,12 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
 
     phi <- Pi/p1
   } else if(!missing(phi) && !is.null(phi)) {
+    sens.var <- "phi"
     Pi <- p1*phi
     psi <- log((p1 * phi^2 + (1 - p0 - p1)*phi)/
                (p1 * phi^2 - (p1 + p0)* phi + p0))
   } else {
+    sens.var <- "Pi"
     psi <- log(Pi * (1 - p1 - p0 + Pi)/(p1 - Pi)/(p0 - Pi))
     phi <- Pi/p1
   }
@@ -130,7 +133,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   ACE.length <- prod(ACE.dim)
   ACE.dimnames <- list(beta0=format(beta0, trim=TRUE),
                        beta1=format(beta1, trim=TRUE),
-                       Pi = format(Pi, trim=TRUE, digits=4, drop0trailing=TRUE))
+                       format(Pi, trim=TRUE, digits=4, drop0trailing=TRUE))
+  names(ACE.dimnames)[3] <- sens.var
 
   ACE <- array(numeric(ACE.length), dim=ACE.dim, dimnames=ACE.dimnames)
 
@@ -261,9 +265,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   ACE.ci.dim <- c(ACE.dim, length(ci.method), ci.probsLen)
   ACE.ci.length <- prod(ACE.ci.dim)
   ACE.ci.dimnames <- c(ACE.dimnames,
-                       list(ci.method=ci.method,
-                            ci.probs=sprintf("%s%%",
-                                             as.character(ci.probs*100))))
+                       list(ci.prob=sprintf("%s%%",
+                                             as.character(ci.probs*100)),
+                            ci.method=ci.method))
   
   ACE.ci <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
                   dimnames=ACE.ci.dimnames)
@@ -356,7 +360,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       ACE[i] + norm * sqrt.ACE.var[i]
     }
     
-    ACE.ci[,,,"analytic",] <- outer(seq_along(ACE), qnorm(ci.probs),
+    ACE.ci[,,,,"analytic"] <- outer(seq_along(ACE), qnorm(ci.probs),
                                    FUN=calculateCi, ACE=ACE,
                                    sqrt.ACE.var=sqrt(ACE.var[,,,'analytic']))
     
@@ -378,7 +382,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     for(k in seq_along(Pi)) {
       for(i in seq_along(beta0)) {
         for(j in seq_along(beta1)) {
-          ACE.ci[i,j,k,'bootstrap',] <- quantile(ACE.list[i,j,k,], probs=ci.probs)
+          ACE.ci[i,j,k,,'bootstrap'] <- quantile(ACE.list[i,j,k,], probs=ci.probs)
           ACE.var[i,j,k,'bootstrap'] <- var(ACE.list[i,j,k,])
         }
       }
@@ -387,7 +391,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   }
 
   return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var),
-                     cdfs), class=c("sensitivity.0d", "sensitivity"), N.boot=N.boot,
+                     cdfs), class=c("sensitivity.2.0d", "sensitivity.0d", "sensitivity"), N.boot=N.boot,
                    parameters=list(z0=groupings[1], z1=groupings[2],
                      selected=selection)))
 }

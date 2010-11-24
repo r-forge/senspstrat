@@ -170,7 +170,7 @@ stopifnot(inherits(ans,"sensitivity.0d"))
 
 ans<-with(vaccine.trial,
           sensitivityGBH(z=treatment,s=hiv.outcome,y=logVL,
-                    beta=c(-Inf, 0,.25,.5,.75,1,Inf),                      
+                    beta=c(-Inf,-1,-0.75,-0.5,-0.25,0,.25,.5,.75,1,Inf),
                     selection="infected",
                     groupings=c("placebo","vaccine"),
                     empty.principal.stratum=c("not infected","infected"),
