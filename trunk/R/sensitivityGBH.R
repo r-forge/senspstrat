@@ -2,8 +2,11 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                            empty.principal.stratum, ci=0.95,
                            ci.method=c("analytic", "bootstrap"), na.rm=FALSE, 
                            N.boot=100, oneSidedTest = FALSE,
-                           twoSidedTest = TRUE)
+                           twoSidedTest = TRUE, isSlaveMode=FALSE)
 {
+  withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
+  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
+                 'analytic' %in% ci.method)
 
   doInfinite <- any(is.infinite(beta))
   doFinite <- any(is.finite(beta))
@@ -16,11 +19,6 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
   ##   return(eval(funCall, envir=parent.frame()))
   ## }
-
-  if(!missing(ci.method) && is.null(ci.method))
-    isSlaveMode <- TRUE
-  else
-    isSlaveMode <- FALSE
 
   if(!isSlaveMode) {
     ## Not running a boot strap mode
@@ -54,7 +52,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     } else if(empty.principal.stratum[2] == selection)
       z <- z == groupings[2]
   } else {
-    GroupReverse <- ci
+    GroupReverse <- groupings
   }
 
   ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
@@ -93,39 +91,27 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
   RR <- min(p1/p0, 1)
 
-  params <- .calc.ecdf(y0)
-  F0 <- params$F
-  dF0 <- diff(c(0, F0))
-  y0.uniq <- params$vals
+  Fas0 <- ecdf(y0)
+  y0.uniq <- knots(Fas0)
+  dF0 <- diff(c(0, Fas0(y0.uniq)))
   
-  params <- .calc.ecdf(y[z1.s1])
-  Fas1 <- params$F
-  dFas1 <- diff(c(0, Fas1))
-  Fas1 <- matrix(Fas1, ncol=1)
-  y1.uniq <- params$vals
-
+  Fas1 <- ecdf(y[z1.s1])
+  y1.uniq <- knots(Fas1)
+  dFas1 <- diff(c(0, Fas1(y1.uniq)))
+  
   mu1 <- mean(y[z1.s1], na.rm=TRUE)
 
-  w.calc <- function(alpha, beta, y)
-    1/(1 + exp(-alpha - beta*y))
-
-  alpha.est <- function(alpha, beta, y, dF, C)
-    (sum(w.calc(alpha=alpha, beta=beta, y=y) * dF) - C)^2
-
   calc.dFas0AndAlpha <- function(beta, y, dF, C) {
-    alphahat <- optimize(f=alpha.est, interval=c(-100,100), beta=beta,
-                         y=y, dF=dF, C=C)$minimum
-
-    if(alphahat > 90 || alphahat < -90) {
-      warning("optimize overflow alphahat value invalid")
-    }
+    alphahat <- .calc.alphahat(beta.y=beta*y, dF=dF, C=C)
     
-    w <- w.calc(alpha=alphahat, beta=beta, y=y)
+    w <- .calc.w(alpha=alphahat, beta=beta*y)
     
     return(c(alphahat=alphahat, dF*w/C))
   }
 
-  Fas0 <- matrix(NA, nrow=length(y0.uniq), ncol=length(beta))
+  if(!withoutCdfs)
+    Fas0 <- funVector(length(beta))
+  
   alphahat <- numeric(length(beta))
   ACE.dim <- length(beta)
   ACE.dimnames <- format(beta, trim=TRUE)
@@ -143,10 +129,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     mu0 <- colSums(y0.uniq * dFas0)
 
-    Fas0[finiteIndex] <- lapply(X=as.data.frame(dFas0), FUN=function(x) {
-      x <- cumsum(x)
-      stepfun(y0.uniq, y=c(0, x))
-    })
+    if(!withoutCdfs) {
+      Fas0[finiteIndex] <- lapply(X=as.data.frame(dFas0), FUN=function(x) {
+        x <- cumsum(x)
+        stepfun(y0.uniq, y=c(0, x))
+      })
+    }
 
     if(GroupReverse)
       ACE[finiteIndex] <- mu0 - mu1
@@ -155,35 +143,35 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   }
 
   if(doInfinite) {
-    if(length(ci.method[ci.method != "bootstrap"]) == 0) {
+    if(withoutCdfs) {
       infiniteACE.info <- sensitivityHHS(z=z,s=s,y=y, bound=bounds,
-                                         selection=TRUE, groupings=c(FALSE, TRUE),
-                                         empty.principal.stratum=c(FALSE, TRUE),
-                                         ci=GroupReverse, ci.method=NULL)
+                                         groupings=GroupReverse,
+                                         ci.method=NULL, isSlaveMode=TRUE)
     } else {
       infiniteACE.info <- sensitivityHHS(z=z,s=s,y=y, bound=bounds,
-                                         selection=TRUE, groupings=c(FALSE, TRUE),
-                                         empty.principal.stratum=c(FALSE,TRUE),
-                                         ci=ci, ci.method='analytic')
+                                         groupings=GroupReverse,
+                                         ci.method=ci.method, isSlaveMode=TRUE)
+
+      if(!withoutCdfs) {
+        Fas0[infiniteIndex] <- infiniteACE.info$Fas0
+      }
+      
+      alphahat[infiniteIndex] <- NA
     }
 
-    if(GroupReverse) 
-      Fas0[infiniteIndex] <- infiniteACE.info$Fas1
-    else
-      Fas0[infiniteIndex] <- infiniteACE.info$Fas0
-    
     ACE[infiniteIndex] <- infiniteACE.info$ACE
-
-    alphahat[infiniteIndex] <- NA
   }
 
-  cdfs <- list(beta=beta[bIndex], alphahat=alphahat[bIndex])
-  if(GroupReverse)
-    cdfs <- c(cdfs, list(y0=y1.uniq, Fas0=Fas1, y1=y0.uniq, Fas1=Fas0[bIndex]))
-  else
-    cdfs <- c(cdfs, list(y0=y0.uniq, Fas0=Fas0[bIndex], y1=y1.uniq, Fas1=Fas1))
-
-  if(is.null(ci) || isSlaveMode) {
+  if(withoutCdfs) {
+    return(list(ACE=ACE))
+  }
+  
+  if(withoutCi) {
+    if(!isSlaveMode && GroupReverse)
+      cdfs <- list(Fas0=Fas1, Fas1=Fas0)
+    else
+      cdfs <- list(Fas0=Fas0, Fas1=Fas1)
+    
     return(c(list(ACE=ACE), cdfs))
   }
   
@@ -228,7 +216,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     names(ACE.var) <- beta
              
     if(doInfinite) {
-      ACE.ci[infiniteIndex,'analytic',] <- infiniteACE.info$ACE.ci[,'analytic',]
+      ACE.ci[infiniteIndex,,'analytic'] <- infiniteACE.info$ACE.ci[,,'analytic']
       ACE.var[infiniteIndex,'analytic'] <- infiniteACE.info$ACE.var[,'analytic']
     }
 
@@ -305,19 +293,15 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       new.y <- y[new.index]
       if(doInfinite)
         ACE.vals[infiniteIndex] <- sensitivityHHS(z=new.z, s=new.s, y=new.y,
-                                                  bound=bounds, selection=TRUE,
-                                                  groupings=c(FALSE, TRUE),
-                                                  empty.principal.stratum=c(FALSE, TRUE),
-                                                  ci=GroupReverse,
-                                                  ci.method=NULL)$ACE
+                                                  bound=bounds,
+                                                  groupings=GroupReverse,
+                                                  ci.method=NULL,
+                                                  isSlaveMode=TRUE)$ACE
       
       ACE.vals[finiteIndex] <- current.fun(z=new.z, s=new.s, y=new.y,
                                            beta=beta[finiteIndex],
-                                           selection=TRUE,
-                                           groupings=c(FALSE, TRUE),
-                                           empty.principal.stratum=c(FALSE, TRUE),
-                                           ci=GroupReverse,
-                                           ci.method=NULL)$ACE
+                                           groupings=GroupReverse,
+                                           ci.method=NULL, isSlaveMode=TRUE)$ACE
 
       ACE.vals
     }, simplify=FALSE), recursive=FALSE)
@@ -330,11 +314,17 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     ACE.var[,'bootstrap'] <- ans[1,]
   }
 
+  if(!isSlaveMode && GroupReverse)
+    cdfs <- list(Fas0=Fas1, Fas1=Fas0[bIndex])
+  else
+    cdfs <- list(Fas0=Fas0[bIndex], Fas1=Fas1)
 
   ans <- structure(c(list(ACE=ACE[bIndex],
                           ACE.ci=ACE.ci[bIndex,,,drop=FALSE],
-                          ACE.var=ACE.var[bIndex,, drop=FALSE]), cdfs),
-                   class=c("sensitivity.0d", "sensitivity"),
+                          ACE.var=ACE.var[bIndex,, drop=FALSE],
+                          beta=beta[bIndex], alphahat=alphahat[bIndex]),
+                     cdfs),
+                   class=c("sensitivity.1.0d", "sensitivity.0d", "sensitivity"),
                    parameters=list(z0=groupings[1], z1=groupings[2],
                      selected=selection, s0=empty.principal.stratum[1],
                      s1=empty.principal.stratum[2]))

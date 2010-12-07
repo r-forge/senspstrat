@@ -11,7 +11,8 @@
 sensitivityGBH(z, s, y, beta, selection, groupings,
                empty.principal.stratum, ci = 0.95,
                ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
-               N.boot = 100, oneSidedTest = FALSE, twoSidedTest = TRUE)
+               N.boot = 100, oneSidedTest = FALSE, twoSidedTest = TRUE,
+               isSlaveMode=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -70,6 +71,9 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   \item{twoSidedTest}{
     logical.  Return a two sided confidence interval for ACE. Defaults
     to \code{TRUE}
+  }
+  \item{isSlaveMode}{
+    logical.  Internal Use only. Used in recursion.
   }
 }
 \details{
@@ -162,11 +166,6 @@ ans<-with(vaccine.trial,
                     N.boot=100)
          )
 ans
-\dontshow{
-stopifnot(is.list(ans))
-stopifnot(inherits(ans,"sensitivity"))
-stopifnot(inherits(ans,"sensitivity.0d"))
-}
 
 ans<-with(vaccine.trial,
           sensitivityGBH(z=treatment,s=hiv.outcome,y=logVL,
@@ -178,26 +177,6 @@ ans<-with(vaccine.trial,
                     N.boot=100)
          )
 ans
-\dontshow{
-stopifnot(is.list(ans))
-stopifnot(inherits(ans,"sensitivity"))
-stopifnot(inherits(ans,"sensitivity.0d"))
-}
-ans<-with(vaccine.trial,
-          sensitivityGBH(z=treatment,s=hiv.outcome,y=logVL,
-                    beta=-Inf,                      
-                    selection="infected",
-                    groupings=c("placebo","vaccine"),
-                    empty.principal.stratum=c("not infected","infected"),
-                    ci.method="bootstrap",
-                    N.boot=100)
-         )
-ans
-\dontshow{
-stopifnot(is.list(ans))
-stopifnot(inherits(ans,"sensitivity"))
-stopifnot(inherits(ans,"sensitivity.0d"))
-}
 }
 \keyword{design}
 % Add one or more standard keywords, see file 'KEYWORDS' in the

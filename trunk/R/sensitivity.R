@@ -1,3 +1,20 @@
+.calc.w <- function(alpha, beta.y)
+  1L/(1L + exp(-alpha - beta.y))
+
+.alpha.est <- function(alpha, beta.y, dF, C)
+  (sum(.calc.w(alpha=alpha, beta.y=beta.y) * dF) - C)^2
+
+.calc.alphahat <- function(beta.y, dF, C) {
+  alphahat <- optimize(f=.alpha.est, interval=c(-100,100), beta.y=beta.y,
+                       dF=dF, C=C)$minimum
+  
+  if(alphahat > 90 || alphahat < -90) {
+    warning("optimize overflow alphahat value invalid")
+  }
+  
+  alphahat
+}
+
 .calc.ecdf <- function(x) {
   n <- length(x)
   

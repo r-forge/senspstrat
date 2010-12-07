@@ -14,7 +14,8 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
               selection, groupings,
               ci = 0.95, ci.method = c("analytic","bootstrap"),
               na.rm = FALSE, N.boot = 100, oneSidedTest = FALSE,
-              twoSidedTest = TRUE, verbose=getOption("verbose"))
+              twoSidedTest = TRUE, verbose=getOption("verbose"),
+              isSlaveMode = FALSE)
 }
 \arguments{
   \item{z}{
@@ -80,6 +81,9 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
   }
   \item{verbose}{
     logical;  prints dots when bootstrapping to show that something is happening.
+  }
+  \item{isSlaveMode}{
+    logical.  Internal Use only. Used in recursion.
   }
 }
 \details{

@@ -1,34 +1,33 @@
 \name{plot.sensitivity}
+\alias{plot.sensitivity}
 \alias{plot.sensitivity.1.0d}
 \alias{plot.sensitivity.2.0d}
-\alias{plot.sensitivity.1d}
 
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-plots the results of calls to the sensitivity functions.
+  plots the results of calls to the sensitivity functions.
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+  Functions used to plot the objects created by the sensitivityPStrat
+  family of functions.
 }
 \usage{
-plot.sensitivity.1.0d(x, xlim, ylim, xlab = expression(beta), ylab =
-"ACE", display = c("analytic", "bootstrap"), col = "black", line.col =
-col, point.col = col, analytic.col = "red", analytic.line.col =
-analytic.col, analytic.point.col = analytic.col, bootstrap.col =
-"green", bootstrap.line.col = bootstrap.col, bootstrap.point.col =
-bootstrap.col, panel.last = NULL, type = "l", ...)
-plot.sensitivity.2.0d(x, xlim, ylim,
-                      xlab=expression(beta[0]),
-                      ylab=expression(beta[1]),
-                      display = c("analytic", "bootstrap"),
-                      col=c(gray(.9),gray(1),gray(.8)),
-                      panel.last=NULL, ...) {
+\method{plot}{sensitivity.1.0d}(x, xlim, ylim,
+     xlab = expression(beta), ylab ="ACE", display = c("analytic", "bootstrap"),
+     col = "black", line.col = col, point.col = col,
+     analytic.col = "red", analytic.line.col = analytic.col,
+     analytic.point.col = analytic.col,
+     bootstrap.col = "green", bootstrap.line.col = bootstrap.col,
+     bootstrap.point.col = bootstrap.col,
+     panel.last = NULL, type = "l", ...)
+
+\method{plot}{sensitivity.2.0d}(x, xlim, ylim, xlab = expression(beta[0]), ylab = expression(beta[1]),
+     display = c("analytic", "bootstrap"), col = c(gray(.9), gray(1), gray(.8)),
+     panel.last = NULL, ...)
 
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
- sensitivity object
+    sensitivity object
 }
   \item{xlim}{
 %%     ~~Describe \code{xlim} here~~
@@ -82,25 +81,27 @@ plot.sensitivity.2.0d(x, xlim, ylim,
 %%     ~~Describe \code{\dots} here~~
 }
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
-\references{
-%% ~put references to the literature/web site here ~
-}
 \author{
-%%  ~~who you are~~
+  Charles Dupont \cr
+  Department of Biostatistics\cr
+  Vanderbilt University\cr
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  \code{\link{plot.default}}  
 }
 \examples{
+data(vaccine.trial)
+
+plot(with(vaccine.trial,
+          sensitivityJR(z=treatment,s=hiv.outcome,y=logVL,
+                    beta0=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
+                    beta1=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
+                    phi=c(0.95,0.90,0.80), selection="infected",
+                    groupings=c("placebo","vaccine"),
+                    N.boot=100)
+         ))
+
 }
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+\keyword{ hplot }
+

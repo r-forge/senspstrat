@@ -125,24 +125,6 @@
   return(list(Fas=Fas))
 }
 
-.calc.w <- function(alpha, beta.tplus) 
-  1/(1L+exp(-alpha - beta.tplus))
-
-.calc.alphahat <- function(beta.tplus, dF, B) {
-  ee <- function(a, beta.tplus, dF, B) {
-    (sum(.calc.w(alpha=a, beta.tplus=beta.tplus)*dF) - B)^2
-  }
-
-  alphahat <- optimize(ee, c(-100,100), beta.tplus=beta.tplus, dF=dF,
-                       B=B)$minimum
-
-  if(alphahat > 90 || alphahat < -90) {
-    warning("optimize overflow alphahat value invalid")
-  }
-
-  alphahat
-}
-
 .calcSGLBetaCoeffBasic <- function(i, beta, beta.tplus, q.index, KMAns, dF0,
                                   RR) {
   if(is.infinite(beta)) {
@@ -155,7 +137,7 @@
   if(all.equal(beta, 0) == TRUE)
     return(list(i=i, alphahat=alphahat, Fas=KMAns$Fas))
 
-  w <- .calc.w(alpha=alphahat, beta.tplus=beta.tplus)
+  w <- .calc.w(alpha=alphahat, beta.y=beta.tplus)
 
   w.dF0 <- w*dF0
   F0ai <- cumsum(w.dF0)/RR
@@ -177,7 +159,7 @@
   if(all.equal(beta, 0) == TRUE) {
     Fas <- KMAns$Fas
 
-    w <- .calc.w(alpha=alphahat, beta.tplus=0)
+    w <- .calc.w(alpha=alphahat, beta.y=0)
 
     A1 <- -N1*p0*w*(1-w)
     B1 <- 0
@@ -194,7 +176,7 @@
   }
   
     
-  w <- .calc.w(alpha=alphahat, beta.tplus=beta.tplus)
+  w <- .calc.w(alpha=alphahat, beta.y=beta.tplus)
 
   w.dF0 <- w*dF0
   F0ai <- cumsum(w.dF0)/RR

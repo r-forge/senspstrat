@@ -2,33 +2,24 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                           selection, groupings, ci=0.95,
                           ci.method=c("analytic", "bootstrap"), na.rm=FALSE,
                           N.boot=100, oneSidedTest = FALSE,
-                          twoSidedTest = TRUE, verbose=getOption("verbose"))
+                          twoSidedTest = TRUE, verbose=getOption("verbose"),
+                          isSlaveMode=FALSE)
 {
-  w.calc <- function(alpha, beta, y)
-    1/(1 + exp(-alpha - beta*y))
-  
-  alpha.est <- function(alpha, beta, y, dF, C)
-    (sum(w.calc(alpha=alpha, beta=beta, y=y) * dF) - C)^2
-
+  withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
+  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
+                 'analytic' %in% ci.method)
 
   calc.coefs <- function(y, beta, dF, RR) {
     coefs <- vector(length(beta), "list")
 
     for(i in seq_along(beta)) {
-      alphahat <- alpha.est(y=y, beta=beta[i], dF=dF, RR=RR)
-      w <- w.calc(alpha=alphahat, beta=beta[i], y=y)
+      alphahat <- .calc.alphahat(beta.y=beta[i]*y, dF=dF, C=RR)
+      w <- .calc.w(alpha=alphahat, beta.y=beta[i]*y)
       coefs[[i]] <- list(alphahat=alphahat, w=w)
     }
 
     return(coefs)
   }
-
-  if(!missing(ci.method) && is.null(ci.method))
-    isSlaveMode <- TRUE
-  else
-    isSlaveMode <- FALSE
-
-  ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
 
   if(!isSlaveMode) {
     ## Not running a boot strap mode
@@ -71,6 +62,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       stop(paste(ErrMsg, collapse="\n  "))
   }
   
+  ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
+
   z0.s1 <- !z & s
   z1.s1 <- z & s
   
@@ -131,10 +124,15 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   
   ACE.dim <- c(length(beta0), length(beta1), length(Pi))
   ACE.length <- prod(ACE.dim)
-  ACE.dimnames <- list(beta0=format(beta0, trim=TRUE),
-                       beta1=format(beta1, trim=TRUE),
-                       format(Pi, trim=TRUE, digits=4, drop0trailing=TRUE))
-  names(ACE.dimnames)[3] <- sens.var
+  ACE.dimnames <- list(format(beta0, trim=TRUE),
+                       format(beta1, trim=TRUE),
+                       format(switch(sens.var,
+                                     Pi=Pi,
+                                     phi=phi,
+                                     psi=psi),
+                              trim=TRUE, digits=4,
+                              drop0trailing=TRUE))
+  names(ACE.dimnames) <- c("beta0", "beta1", sens.var)
 
   ACE <- array(numeric(ACE.length), dim=ACE.dim, dimnames=ACE.dimnames)
 
@@ -163,6 +161,16 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   }
 
   for(i in seq_along(Pi)) {
+    if(phi[i] == 1) {
+      ACE.info <- sensitivityGBH(z=z,s=s,y=y,beta=beta0, ci.method=NULL,
+                                 isSlaveMode=TRUE)
+
+      ACE[,,i] <- ACE.info$ACE
+      alphahat0[,i] <- ACE.info$alphahat
+      alphahat1[,i] <- NA
+      next
+    }
+    
     if(Pi[i] == 0) {
       ACE[,,i] <- NA
       alphahat0[,i] <- NA
@@ -176,9 +184,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     
     for(j in seq_along(beta0)) {
       if(is.finite(beta0[j])) {
-        alphahat0[j,i] <- optimize(alpha.est, c(-100,100), beta=beta0[j],
-                                   y=y0.uniq, dF=dF0, C=a0)$minimum
-        w0 <- w.calc(alpha=alphahat0[j,i], beta=beta0[j], y=y0.uniq)
+        alphahat0[j,i] <- .calc.alphahat(beta.y=beta0[j]*y0.uniq, dF=dF0, C=a0)
+        w0 <- .calc.w(alpha=alphahat0[j,i], beta.y=beta0[j]*y0.uniq)
 
         dFas0 <- dF0*w0/a0
         if(!isSlaveMode)
@@ -205,10 +212,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     
     for(j in seq_along(beta1)) {
       if(is.finite(beta1[j])) {
-        alphahat1[j,i] <- optimize(alpha.est, c(-100,100), beta=beta1[j],
-                                   y=y1.uniq, dF=dF1, C=a1)$minimum
-        
-        w1 <- w.calc(alpha=alphahat1[j,i], beta=beta1[j], y=y1.uniq)
+        alphahat1[j,i] <- .calc.alphahat(beta.y=beta1[j]*y1.uniq, dF=dF1, C=a1) 
+        w1 <- .calc.w(alpha=alphahat1[j,i], beta.y=beta1[j]*y1.uniq)
 
         dFas1 <- dF1*w1/a1
 
@@ -374,8 +379,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     for(i in seq_len(N.boot)) {
       new.index <- sample(seq_len(N), N, replace=TRUE)
       ACE.list[,,,i] <- Recall(z=z[new.index],s=s[new.index],y=y[new.index],
-                               beta0=beta0, beta1=beta1, psi=psi, ci=NULL,
-                               ci.method=NULL)$ACE
+                               beta0=beta0, beta1=beta1, psi=psi,
+                               ci.method=NULL, isSlaveMode=TRUE)$ACE
       if(verbose) cat(".")
     }
 
@@ -391,7 +396,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   }
 
   return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var),
-                     cdfs), class=c("sensitivity.2.0d", "sensitivity.0d", "sensitivity"), N.boot=N.boot,
+                     cdfs),
+                   class=c("sensitivity.2.0d", "sensitivity.0d", "sensitivity"),
+                   N.boot=N.boot,
                    parameters=list(z0=groupings[1], z1=groupings[2],
                      selected=selection)))
 }
