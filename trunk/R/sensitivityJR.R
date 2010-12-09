@@ -380,6 +380,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       new.index <- sample(seq_len(N), N, replace=TRUE)
       ACE.list[,,,i] <- Recall(z=z[new.index],s=s[new.index],y=y[new.index],
                                beta0=beta0, beta1=beta1, psi=psi,
+                               groupings=FALSE,
                                ci.method=NULL, isSlaveMode=TRUE)$ACE
       if(verbose) cat(".")
     }

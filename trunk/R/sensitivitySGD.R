@@ -127,8 +127,6 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                            oneSidedTest=FALSE, twoSidedTest=TRUE,
                            inCore=TRUE, verbose=getOption("verbose"),
                            colsPerFile=1000L) {
-  if(!require(survival))
-    stop("require's the survival package to function")
 
   ## z - group that subject belongs to
   ## s - subject met selection cirteria

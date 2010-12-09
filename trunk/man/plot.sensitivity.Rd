@@ -2,6 +2,7 @@
 \alias{plot.sensitivity}
 \alias{plot.sensitivity.1.0d}
 \alias{plot.sensitivity.2.0d}
+\alias{plot.sensitivity.1.1d}
 
 \title{
   plots the results of calls to the sensitivity functions.
@@ -12,7 +13,8 @@
 }
 \usage{
 \method{plot}{sensitivity.1.0d}(x, xlim, ylim,
-     xlab = expression(beta), ylab ="ACE", display = c("analytic", "bootstrap"),
+     xlab = expression(beta), ylab = "ACE",
+     display = c("analytic", "bootstrap"),
      col = "black", line.col = col, point.col = col,
      analytic.col = "red", analytic.line.col = analytic.col,
      analytic.point.col = analytic.col,
@@ -24,62 +26,56 @@
      display = c("analytic", "bootstrap"), col = c(gray(.9), gray(1), gray(.8)),
      panel.last = NULL, ...)
 
+\method{plot}{sensitivity.1.1d}(x, xlim, ylim,
+     xlab = expression(beta), ylab = "SCE",
+     t.point, display = c("analytic", "bootstrap"),
+     col = "black", line.col = col, point.col = col,
+     analytic.col = "red", analytic.line.col = analytic.col,
+     analytic.point.col = analytic.col,
+     bootstrap.col = "green", bootstrap.line.col = bootstrap.col,
+     bootstrap.point.col = bootstrap.col,
+     panel.last = NULL, type = "l", ...)
 }
 \arguments{
   \item{x}{
     sensitivity object
-}
-  \item{xlim}{
-%%     ~~Describe \code{xlim} here~~
-}
-  \item{ylim}{
-%%     ~~Describe \code{ylim} here~~
-}
-  \item{xlab}{
-%%     ~~Describe \code{xlab} here~~
-}
-  \item{ylab}{
-%%     ~~Describe \code{ylab} here~~
-}
+  }
+  \item{t.point}{
+    the time point at which data to create the plot.
+  }
   \item{display}{
-%%     ~~Describe \code{display} here~~
-}
-  \item{col}{
-%%     ~~Describe \code{col} here~~
-}
+    character vector. Controlls which confidence interval to use plot.
+  }
   \item{line.col}{
-%%     ~~Describe \code{line.col} here~~
-}
+    the color all the lines should be.
+  }
   \item{point.col}{
-%%     ~~Describe \code{point.col} here~~
-}
+    the color all the infinity points should be.
+  }
   \item{analytic.col}{
-%%     ~~Describe \code{analytic.col} here~~
-}
+    the color of all of the analytic confidence interval markings
+  }
   \item{analytic.line.col}{
-%%     ~~Describe \code{analytic.line.col} here~~
-}
+    the color of all of the analytic confidence interval lines    
+  }
   \item{analytic.point.col}{
-%%     ~~Describe \code{analytic.point.col} here~~
-}
+    the color of all of the analytic confidence interval infinity points
+  }
   \item{bootstrap.col}{
-%%     ~~Describe \code{bootstrap.col} here~~
-}
+    the color of all of the bootstrap confidence interval markings
+  }
   \item{bootstrap.line.col}{
-%%     ~~Describe \code{bootstrap.line.col} here~~
-}
+    the color of all of the bootstrap confidence interval lines    
+  }
   \item{bootstrap.point.col}{
-%%     ~~Describe \code{bootstrap.point.col} here~~
-}
-  \item{panel.last}{
-%%     ~~Describe \code{panel.last} here~~
-}
-  \item{type}{
-%%     ~~Describe \code{type} here~~
-}
+    the color of all of the bootstrap confidence interval infinity points
+  }
+  \item{xlim, ylim, xlab, ylab, col, panel.last, type}{
+    see \code{\link{plot.default}}
+  }
   \item{\dots}{
-%%     ~~Describe \code{\dots} here~~
-}
+    arguments passed to \code{\link{plot.default}}
+  }
 }
 \author{
   Charles Dupont \cr

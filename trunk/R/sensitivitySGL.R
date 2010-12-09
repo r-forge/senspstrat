@@ -208,8 +208,6 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
                            ci=0.95, ci.method=c("analytic", "bootstrap"),
                            na.rm=FALSE, N.boot=100L, oneSidedTest=FALSE,
                            twoSidedTest=TRUE, verbose=getOption("verbose")) {
-  if(!require(survival))
-    stop("require's the survival package to function")
 
   ## z - group that subject belongs to
   ## s - subject met selection cirteria

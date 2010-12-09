@@ -6,6 +6,6 @@ Date: 2010-09-29
 Author: Charles Dupont
 Maintainer: Charles Dupont <charles.dupont@vanderbilt.edu>
 Description: This package provides functions to perform principal stratification sensitivity analyses on datasets.
-Depends: stats, survival, rgl
+Imports: stats, survival
 License: GPL
 LazyLoad: yes

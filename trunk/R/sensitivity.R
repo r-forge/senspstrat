@@ -1,11 +1,38 @@
+## Function to calculate w given by equation
+##
+##           1
+## ----------------------
+##   - beta y - alpha
+## %e                 + 1
 .calc.w <- function(alpha, beta.y)
   1L/(1L + exp(-alpha - beta.y))
 
+## Need to solve equaition 1 for alpha
+##
+##  n
+## ====            dF
+## \                 i
+##  >    ----------------------- - C                                         (1)
+## /       - beta y  - alpha
+## ====            i
+## i = 1 %e                  + 1
+##
+## to do so find the minimum of the integral of the equation 1 shown in
+## equation 2
+##
+##  n
+## ====            beta y  + alpha
+## \                     i
+##  >    dF  log(%e                + 1) - alpha C                            (2)
+## /       i
+## ====
+## i = 1
+##
 .alpha.est <- function(alpha, beta.y, dF, C)
-  (sum(.calc.w(alpha=alpha, beta.y=beta.y) * dF) - C)^2
+  sum(log(1L + exp(alpha + beta.y)) * dF) - alpha*C
 
 .calc.alphahat <- function(beta.y, dF, C) {
-  alphahat <- optimize(f=.alpha.est, interval=c(-100,100), beta.y=beta.y,
+  alphahat <- optimize(f=.alpha.est, interval=c(-100L, 100L), beta.y=beta.y,
                        dF=dF, C=C)$minimum
   
   if(alphahat > 90 || alphahat < -90) {
@@ -260,193 +287,7 @@ plot.sensitivity.2.0d <- function(x, xlim, ylim,
 #  points(x=inf.x, y=ACE.inf, pch=1, col=point.col)
 }
 
-persp3d.sensitivity.0d <- function(x, xlim, ylim, zlim,
-                                 xlab=expression(beta[0]),
-                                 ylab=expression(beta[1]),
-                                 zlab="ACE",
-                                 display = c("analytic", "bootstrap"),
-                                 col='black', line.col=col, point.col=col,
-                                 analytic.col="red",
-                                 analytic.line.col=analytic.col,
-                                 analytic.point.col=analytic.col,
-                                 bootstrap.col="green",
-                                 bootstrap.line.col=bootstrap.col,
-                                 bootstrap.point.col=bootstrap.col,
-                                 type='l', ...) {
-
-  display <- match.arg(display, several.ok=TRUE)
-
-  sortIndx0 <- sort.list(x$beta0)
-  sortIndx1 <- sort.list(x$beta1)
-  
-  beta0 <- x$beta0[sortIndx0]
-  beta1 <- x$beta1[sortIndx1]
-  
-  ACE <- x$ACE[sortIndx0,sortIndx1,]
-  ACE.ci <- x$ACE.ci[sortIndx0,sortIndx1,,,, drop=FALSE]
-
-  finIndx0 <- is.finite(beta0)
-  infIndx0 <- is.infinite(beta0)
-
-  finIndx1 <- is.finite(beta1)
-  infIndx1 <- is.infinite(beta1)
-
-  beta0.fin <- beta0[finIndx0]
-  beta1.fin <- beta1[finIndx1]
-
-  ACE.fin <- ACE[finIndx0,finIndx1,]
-  ACE.ci.fin <- ACE.ci[finIndx0,finIndx1,,,, drop=FALSE]
-
-  beta0.inf <- beta0[infIndx0]
-  beta1.inf <- beta1[infIndx1]
-
-  ACE.inf <- ACE[infIndx0,infIndx1,,drop=FALSE]
-  ACE.ci.inf <- ACE.ci[infIndx0,infIndx1,,,, drop=FALSE]
-
-  if(missing(zlim)) {
-    zlim <- range(c(ACE, ACE.ci))
-  }
-
-  if(missing(ylim)) {
-    ylim <- range(beta1, finite=TRUE)
-  }
-
-  if(missing(xlim)) {
-    xlim <- range(beta0, finite=TRUE)
-  }
-  
-  indx0 <- match(beta0.inf, c(-Inf, Inf))
-  indx1 <- match(beta1.inf, c(-Inf, Inf))
-
-  persp3d(x=beta0.fin, y=beta1.fin, z=ACE.fin[,,1], xlim=xlim, ylim=ylim, zlim=zlim,
-        xlab=xlab, ylab=ylab, zlab=zlab, col=col, ..., front='line',back='line', lit=FALSE)
-
-#  inf.x <- par('usr')[indx] + strwidth("m")/c(2,-2)[indx]
-  inf.x <- range(beta0.fin) - c(1, -1)
-  inf.y <- range(beta1.fin) - c(1, -1)
-  
-#  lines(trans3d(x=inf.x, y=inf.y, z=ACE.inf, pmat=trans), pch=1, col=point.col)
-
-  ##  doBootstrap
-  if('analytic' %in% display && 'analytic' %in% dimnames(x$ACE.var)$ci.method) {
-    for(i in seq_len(dim(ACE.ci.fin)[[4]])) {
-      surface3d(x=beta0.fin, y=beta1.fin, z=ACE.ci.fin[,,1,'analytic',i],
-                col=analytic.line.col, front='line', back='line', lit=FALSE)
-#      lines(x=beta.fin, y=ACE.ci.fin[,i,'analytic'], lty=2,
-#            col=analytic.line.col)
-    }
-#    points(x=rep.int(inf.x, times=dim(ACE.ci.fin)[[2]]),
-#           y=ACE.ci.inf[,indx, "analytic"], pch=3, col=analytic.point.col)
-  }
-
-  if('bootstrap' %in% display && 'bootstrap' %in% dimnames(x$ACE.var)$ci.method) {
-    for(i in seq_len(dim(ACE.ci.fin)[[4]])) {
-      surface3d(x=beta0.fin, y=beta1.fin, z=ACE.ci.fin[,,1,'bootstrap',i],
-                col=bootstrap.line.col, front='line',back='line', lit=FALSE)
-#      lines(x=beta.fin, y=ACE.ci.fin[,i,'analytic'], lty=2,
-#            col=analytic.line.col)
-    }
-#    points(x=rep.int(inf.x, times=dim(ACE.ci.fin)[[2]]),
-#           y=ACE.ci.inf[,indx, "analytic"], pch=3, col=analytic.point.col)
-  }
-} 
-
-persp.sensitivity.0d <- function(x, xlim, ylim, zlim,
-                                 xlab=expression(beta[0]),
-                                 ylab=expression(beta[1]),
-                                 zlab="ACE",
-                                 display = c("analytic", "bootstrap"),
-                                 col='black', line.col=col, point.col=col,
-                                 analytic.col="red",
-                                 analytic.line.col=analytic.col,
-                                 analytic.point.col=analytic.col,
-                                 bootstrap.col="green",
-                                 bootstrap.line.col=bootstrap.col,
-                                 bootstrap.point.col=bootstrap.col,
-                                 type='l', ...) {
-
-  display <- match.arg(display, several.ok=TRUE)
-
-  sortIndx0 <- sort.list(x$beta0)
-  sortIndx1 <- sort.list(x$beta1)
-  
-  beta0 <- x$beta0[sortIndx0]
-  beta1 <- x$beta1[sortIndx1]
-  
-  ACE <- x$ACE[sortIndx0,sortIndx1,]
-  ACE.ci <- x$ACE.ci[sortIndx0,sortIndx1,,,, drop=FALSE]
-
-  finIndx0 <- is.finite(beta0)
-  infIndx0 <- is.infinite(beta0)
-
-  finIndx1 <- is.finite(beta1)
-  infIndx1 <- is.infinite(beta1)
-
-  beta0.fin <- beta0[finIndx0]
-  beta1.fin <- beta1[finIndx1]
-
-  ACE.fin <- ACE[finIndx0,finIndx1,]
-  ACE.ci.fin <- ACE.ci[finIndx0,finIndx1,,,, drop=FALSE]
-
-  beta0.inf <- beta0[infIndx0]
-  beta1.inf <- beta1[infIndx1]
-
-  ACE.inf <- ACE[infIndx0,infIndx1,,drop=FALSE]
-  ACE.ci.inf <- ACE.ci[infIndx0,infIndx1,,,, drop=FALSE]
-
-  if(missing(zlim)) {
-    zlim <- range(c(ACE, ACE.ci))
-  }
-
-  if(missing(ylim)) {
-    ylim <- range(beta1, finite=TRUE)
-  }
-
-  if(missing(xlim)) {
-    xlim <- range(beta0, finite=TRUE)
-  }
-  
-  indx0 <- match(beta0.inf, c(-Inf, Inf))
-  indx1 <- match(beta1.inf, c(-Inf, Inf))
-
-  persp(x=beta0.fin, y=beta1.fin, z=ACE.fin[,,1], xlim=xlim, ylim=ylim, zlim=zlim,
-        xlab=xlab, ylab=ylab, zlab=zlab, col=col, ...)
-
-#  inf.x <- par('usr')[indx] + strwidth("m")/c(2,-2)[indx]
-  inf.x <- range(beta0.fin) - c(1, -1)
-  inf.y <- range(beta1.fin) - c(1, -1)
-  
-#  lines(trans3d(x=inf.x, y=inf.y, z=ACE.inf, pmat=trans), pch=1, col=point.col)
-
-  ##  doBootstrap
-  if('analytic' %in% display && 'analytic' %in% dimnames(x$ACE.var)$ci.method) {
-    for(i in seq_len(dim(ACE.ci.fin)[[4]])) {
-      par(new=TRUE)
-      persp(x=beta0.fin, y=beta1.fin, z=ACE.ci.fin[,,1,'analytic',i],
-            xlim=xlim, ylim=ylim, zlim=zlim, xlab=xlab, ylab=ylab, zlab=zlab,
-            ..., axes=FALSE, box=FALSE, col=analytic.line.col)
-#      lines(x=beta.fin, y=ACE.ci.fin[,i,'analytic'], lty=2,
-#            col=analytic.line.col)
-    }
-#    points(x=rep.int(inf.x, times=dim(ACE.ci.fin)[[2]]),
-#           y=ACE.ci.inf[,indx, "analytic"], pch=3, col=analytic.point.col)
-  }
-
-  if('bootstrap' %in% display && 'bootstrap' %in% dimnames(x$ACE.var)$ci.method) {
-    for(i in seq_len(dim(ACE.ci.fin)[[4]])) {
-      par(new=TRUE)
-      persp(x=beta0.fin, y=beta1.fin, z=ACE.ci.fin[,,1,'bootstrap',i],
-            xlim=xlim, ylim=ylim, zlim=zlim, xlab=xlab, ylab=ylab, zlab=zlab,
-            ..., axes=FALSE, box=FALSE, col=bootstrap.line.col)
-#      lines(x=beta.fin, y=ACE.ci.fin[,i,'analytic'], lty=2,
-#            col=analytic.line.col)
-    }
-#    points(x=rep.int(inf.x, times=dim(ACE.ci.fin)[[2]]),
-#           y=ACE.ci.inf[,indx, "analytic"], pch=3, col=analytic.point.col)
-  }
-} 
-
-plot.sensitivity.1d <- function(x, xlim, ylim, xlab=expression(beta), ylab="SCE",
+plot.sensitivity.1.1d <- function(x, xlim, ylim, xlab=expression(beta), ylab="SCE",
                                  t.point,
                                  display = c("analytic", "bootstrap"),
                                  col='black', line.col=col, point.col=col,
