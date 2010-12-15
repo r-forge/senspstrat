@@ -73,3 +73,31 @@
   x[indx] <- rowSums(value[xcol[indx],]*value[xrow[indx],], na.rm=na.rm)
   x
 }
+
+.makeBootstrapEvntIndx <- function(s, indx.seq, N) {
+  numEvents <- 0L
+  index <- integer(0L)
+  storage.mode(indx.seq) <- "integer"
+  storage.mode(N) <- "integer"
+  
+  repeat {
+    subIndx <- sample(indx.seq, 1000L, replace=TRUE)
+    numSubEvents <- sum(s[subIndx])
+    newNumEvents <- numEvents + numSubEvents
+
+    if(newNumEvents > N)
+      subIndx <- subIndx[cumsum(s[subIndx]) + numEvents <= N]
+
+    index <- c(index, subIndx)
+
+    if(newNumEvents >= N)
+      break
+
+    numEvents <- newNumEvents
+  }
+
+  return(index)
+}
+
+.makeBootstrapLenIndx <- function(s, indx.seq, N)
+  sample(indx.seq, N, replace=TRUE)
