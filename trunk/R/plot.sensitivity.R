@@ -84,9 +84,9 @@ plot.sensitivity.2.0d <- function(x, xlim, ylim,
   
   ACE.ci <- x$ACE.ci[sortIndx0,sortIndx1,,,, drop=FALSE]
 
-  reject <- ifelse(ACE < ACE.ci[,,,1,display],
+  reject <- ifelse(ACE.ci[,,,2,display] < 0,
                   -1,
-                  ifelse(ACE > ACE.ci[,,,2,display], 
+                  ifelse(ACE.ci[,,,1,display] > 0, 
                          1,
                          0))
 
@@ -121,6 +121,9 @@ plot.sensitivity.2.0d <- function(x, xlim, ylim,
           col=col,
           sub=bquote(.(as.symbol(names(dimnames(ACE))[3])) == .(format(as.numeric(dimnames(ACE)[[c(3,i)]]), digits=3))),
           ...)
+
+    axis(side=1,at=beta0,label=format(beta0, digits=1,trim=TRUE,drop0trailing=TRUE), line=NA)
+    axis(side=2,at=beta1,label=format(beta1, digits=1,trim=TRUE,drop0trailing=TRUE), line=NA)
   }
   
 #  inf.x <- par('usr')[indx] + strwidth("m")/c(2,-2)[indx]

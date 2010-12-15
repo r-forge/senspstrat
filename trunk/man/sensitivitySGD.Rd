@@ -15,7 +15,8 @@ sensitivitySGD(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                ci=0.95, ci.method = c("bootstrap", "analytic"),
                na.rm = FALSE, N.boot = 100L, N.events = NULL,
                oneSidedTest = FALSE, twoSidedTest = TRUE, inCore = TRUE,
-               verbose = getOption("verbose"), colsPerFile = 1000L)
+               verbose = getOption("verbose"), colsPerFile = 1000L,
+               isSlaveMode = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -109,6 +110,9 @@ sensitivitySGD(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
   \item{colsPerFile}{
     integer; number of columns of the scratch file to process in each
     pass (e.g., 100 columns).
+  }
+  \item{isSlaveMode}{
+    logical.  Internal Use only. Used in recursion.
   }
 }
 \details{

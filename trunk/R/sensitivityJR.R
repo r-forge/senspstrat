@@ -83,31 +83,13 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   VE <- 1 - RR
 
   ## Calc Pi because it will be needed later
-  if(!missing(psi) && !is.null(psi)) {
-    sens.var <- "psi"
-    Pi <-
-      ifelse(abs(psi) < sqrt(.Machine$double.eps), p0*p1,
-             -(sqrt((p1^2-2*p0*p1+p0^2)*exp(2*psi)+p1^2
-                    +exp(psi)
-                    *(-2*p1^2+2*p1-2*p0^2+2*p0)
-                    +(2*p0-2)*p1+p0^2-2*p0+1)
-               +p1+exp(psi)*(-p1-p0)+p0-1)
-             /(2*exp(psi)-2))
+  tmp <- .calcPiPhiPsi(Pi=Pi, phi=phi, psi=psi, p0=p0, p1=p1)
+  Pi <- tmp$Pi
+  psi <- tmp$psi
+  phi <- tmp$phi
+  sens.var <- tmp$sens.var
+  
 
-    phi <- Pi/p1
-  } else if(!missing(phi) && !is.null(phi)) {
-    sens.var <- "phi"
-    Pi <- p1*phi
-    psi <- log((p1 * phi^2 + (1 - p0 - p1)*phi)/
-               (p1 * phi^2 - (p1 + p0)* phi + p0))
-  } else {
-    sens.var <- "Pi"
-    psi <- log(Pi * (1 - p1 - p0 + Pi)/(p1 - Pi)/(p0 - Pi))
-    phi <- Pi/p1
-  }
-
-  ## Calc psi for later use
-    
   Fn0 <- ecdf(y0)
   y0.uniq <- knots(Fn0)
   F0 <- Fn0(y0.uniq)
@@ -118,7 +100,6 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   F1 <- Fn1(y1.uniq)
   dF1 <- diff(c(0, F1))
 
-#  print(Pi)
   q0c <- matrix(quantile(y0, probs=c(Pi/p0, 1-Pi/p0)), ncol=2)
   q1c <- matrix(quantile(y1, probs=c(Pi/p1, 1-Pi/p1)), ncol=2)
   
@@ -144,10 +125,10 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                             dimnames=FnAs0.dimnames)
 
   FnAs1.dim <- ACE.dim[-1L]
-  FnAs0.length <- prod(FnAs0.dim)
+  FnAs1.length <- prod(FnAs1.dim)
   FnAs1.dimnames <- ACE.dimnames[-1L]
 
-  mu1 <- alphahat1 <- array(numeric(FnAs0.length), dim=FnAs1.dim,
+  mu1 <- alphahat1 <- array(numeric(FnAs1.length), dim=FnAs1.dim,
                             dimnames=FnAs1.dimnames)
 
   if(!isSlaveMode) {

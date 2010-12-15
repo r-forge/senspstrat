@@ -199,25 +199,21 @@
               dg=dg))
 }
 
-.makeBootstrapLenIndx <- function(s, indx.seq, N)
-  sample(indx.seq, N, replace=TRUE)
-
 sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
                            selection, trigger, groupings,
                            empty.principal.stratum,
                            ci=0.95, ci.method=c("analytic", "bootstrap"),
                            na.rm=FALSE, N.boot=100L, oneSidedTest=FALSE,
-                           twoSidedTest=TRUE, verbose=getOption("verbose")) {
+                           twoSidedTest=TRUE, verbose=getOption("verbose"),
+                           isSlaveMode=FALSE) {
 
   ## z - group that subject belongs to
   ## s - subject met selection cirteria
   ## d - subject had event
   ## y - time until event ocurred
-
-  if(!missing(ci.method) && is.null(ci.method))
-    isSlaveMode <- TRUE
-  else
-    isSlaveMode <- FALSE
+  withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
+  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
+                 'analytic' %in% ci.method)
 
   if(!isSlaveMode) {
     ## Not running a boot strap mode
@@ -255,7 +251,7 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
     s <- s == selection
     d <- d == trigger
   } else {
-    GroupReverse <- ci
+    GroupReverse <- groupings
   }
   
   ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
@@ -297,8 +293,8 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
   
   dF0 <- diff(c(0L,KM0$Fas,1L))
 
-  doAnalyticCi <- ('analytic' %in% ci.method && !is.null(ci))
-  doBootStrapCi <- ('bootstrap' %in% ci.method && !is.null(ci))
+  doAnalyticCi <- ('analytic' %in% ci.method && !is.null(ci) && !withoutCi)
+  doBootStrapCi <- ('bootstrap' %in% ci.method && !is.null(ci) && !withoutCi)
 
   betaOrig <- beta
   beta <- unique(sort(beta))
@@ -327,7 +323,9 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
     SCE[coeff0$i,] <- coeff0$Fas - coeff1$Fas
   }
   
-  if(isSlaveMode) return(list(SCE=SCE))
+  if(withoutCdfs) return(list(SCE=SCE))
+
+  if(withoutCi) return(list(SCE=SCE))
   
   if(twoSidedTest) {
     ci.probs <- c(ifelse(ci < 0.5, ci, 0), ifelse(ci < 0.5, 1, ci)) +
@@ -465,13 +463,10 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
                                    y=y[samp],
                                    beta=beta,
                                    tau=tau,
-                                   selection=TRUE,
-                                   groupings=c(FALSE,TRUE),
-                                   empty.principal.stratum=c(FALSE,TRUE),
-                                   trigger=TRUE,
                                    time.points=time.points,
+                                   groupings=GroupReverse,
                                    ci.method=NULL,
-                                   ci=GroupReverse)$SCE)
+                                   isSlaveMode=TRUE)$SCE)
       if(verbose) cat(".")
       return(ans)
     }

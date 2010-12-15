@@ -91,34 +91,6 @@
   return(list(i=beta.tplus$i, alphahat=alphahat, SCE=SCE))
 }
 
-.makeBootstrapEvntIndx <- function(s, indx.seq, N) {
-  numEvents <- 0L
-  index <- integer(0L)
-  storage.mode(indx.seq) <- "integer"
-  storage.mode(N) <- "integer"
-  
-  repeat {
-    subIndx <- sample(indx.seq, 1000L, replace=TRUE)
-    numSubEvents <- sum(s[subIndx])
-    newNumEvents <- numEvents + numSubEvents
-
-    if(newNumEvents > N)
-      subIndx <- subIndx[cumsum(s[subIndx]) + numEvents <= N]
-
-    index <- c(index, subIndx)
-
-    if(newNumEvents >= N)
-      break
-
-    numEvents <- newNumEvents
-  }
-
-  return(index)
-}
-
-.makeBootstrapLenIndx <- function(s, indx.seq, N)
-  sample(indx.seq, N, replace=TRUE)
-
 sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                            time.points, 
                            selection, trigger, groupings,
@@ -126,25 +98,21 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                            na.rm=FALSE, N.boot=100L, N.events=NULL,
                            oneSidedTest=FALSE, twoSidedTest=TRUE,
                            inCore=TRUE, verbose=getOption("verbose"),
-                           colsPerFile=1000L) {
+                           colsPerFile=1000L, isSlaveMode=FALSE) {
+
+  withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
+  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
+                                'analytic' %in% ci.method)
 
   ## z - group that subject belongs to
   ## s - subject met selection cirteria
   ## d - subject had event
   ## y - time until event ocurred
 
-  if(!missing(ci.method) && is.null(ci.method))
-    isSlaveMode <- TRUE
-  else
-    isSlaveMode <- FALSE
-
   ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
   
   ErrMsg <- character(0L)
-  if(isSlaveMode) {
-    ## Running in boot strap mode
-    
-  } else {
+  if(!isSlaveMode) {
     ## Not running a boot strap mode
     ## Run error checks on variables.
     ErrMsg <- NULL
@@ -210,25 +178,12 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
       stop("No events occured in one or more of the treatment arms")
     }
 
-  if(!missing(psi) && !is.null(psi)) {
-    Pi <-
-      ifelse(abs(psi) < sqrt(.Machine$double.eps), p0*p1,
-             -(sqrt((p1^2-2*p0*p1+p0^2)*exp(2*psi)+p1^2
-                    +exp(psi)
-                    *(-2*p1^2+2*p1-2*p0^2+2*p0)
-                    +(2*p0-2)*p1+p0^2-2*p0+1)
-               +p1+exp(psi)*(-p1-p0)+p0-1)
-             /(2*exp(psi)-2))
-
-    phi <- Pi/p1
-  } else if(!missing(phi) && !is.null(phi)) {
-    Pi <- p1*phi
-    psi <- log((p1 * phi^2 + (1 - p0 - p1)*phi)/
-               (p1 * phi^2 - (p1 + p0)* phi + p0))
-  } else {
-    psi <- log(Pi * (1 - p1 - p0 + Pi)/(p1 - Pi)/(p0 - Pi))
-    phi <- Pi/p1
-  }
+  tmp <- .calcPiPhiPsi(Pi=Pi, phi=phi, psi=psi, p0=p0, p1=p1)
+  Pi <- tmp$Pi
+  psi <- tmp$psi
+  phi <- tmp$phi
+  sens.var <- tmp$sens.var
+  rm(tmp)
 
   ## summary survfit of length of time til event for group 0 and group 1.
 ##   temp <- summary(survfit(Surv(y[z0.s1],d[z0.s1])~1L))
@@ -277,10 +232,17 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
 
   SCE.dim <- c(length(beta0), length(beta1), length(psi), length(time.points))
   SCE.length <- prod(SCE.dim)
-  SCE.dimnames <- list(beta0=as.character(beta0), beta1=as.character(beta1),
-                       psi=format(as.character(psi), trim=TRUE, digits=4,
-                                  drop0trailing=TRUE),
-                       time.points=as.character(time.points))
+  SCE.dimnames <- list(format(beta0, trim=TRUE),
+                       format(beta1, trim=TRUE),
+                       format(switch(sens.var,
+                                     Pi=Pi,
+                                     phi=phi,
+                                     psi=psi),
+                              trim=TRUE, digits=4,
+                              drop0trailing=TRUE),
+                       format(time.points, trim=TRUE))
+  names(SCE.dimnames) <- c("beta0", "beta1", sens.var, "time.points")
+
   SCE <- array(numeric(SCE.length), dim=SCE.dim, dimnames=SCE.dimnames)
   
   ## iterate across all betas and Pi values
@@ -293,9 +255,18 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
   }
   
   
-  if(isSlaveMode)
+  if(withoutCdfs)
     return(list(SCE = SCE))
 
+  cdfs <- list(alphahat0=sapply(coeffs, FUN=function(coeff) sapply(coeff$beta0.coeff, FUN=function(b) b$alphahat)),
+               beta0=beta0,
+               alphahat1=sapply(coeffs, FUN=function(coeff) sapply(coeff$beta1.coeff, FUN=function(b) b$alphahat)),
+               beta1=beta1,
+               psi=psi, phi=phi, Pi=Pi, time.points=time.points)
+
+  if(withoutCi)
+    return(c(list(SCE = SCE), cdfs))
+  
   if(twoSidedTest) {
     if(ci < 0.5)
       ci.probs <- c(ci, 1L) - ci/2L
@@ -312,14 +283,9 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
   ci.probs <- unique(ci.probs)
   ci.probsLen <- length(ci.probs)
 
-  cdfs <- list(alphahat0=sapply(coeffs, FUN=function(coeff) sapply(coeff$beta0.coeff, FUN=function(b) b$alphahat)),
-               beta0=beta0,
-               alphahat1=sapply(coeffs, FUN=function(coeff) sapply(coeff$beta1.coeff, FUN=function(b) b$alphahat)),
-               beta1=beta1,
-               psi=psi, phi=phi, Pi=Pi, ci.probs=ci.probs,
-               time.points=time.points)
-
   z.seq <- seq_len(N)
+
+  cdfs <- c(cdfs, list(ci.probs=ci.probs))
 
   SCE.ci.dim <- c(SCE.dim, ci.probsLen, length(ci.method))
   SCE.ci.dimnames <- c(SCE.dimnames, list(ci.probs=as.character(ci.probs),
@@ -358,12 +324,8 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
       ans <- as.vector(current.fun(z=z[samp], s=s[samp], d=d[samp],
                                    y=y[samp],
                                    beta0=beta0, beta1=beta1, psi=psi,
-                                   tau=tau,
-                                   selection=TRUE,
-                                   groupings=c(FALSE,TRUE),
-                                   trigger=TRUE,
-                                   time.points=time.points,
-                                   ci=NULL, ci.method=NULL)$SCE)
+                                   tau=tau, time.points=time.points,
+                                   ci.method=NULL, isSlaveMode=TRUE)$SCE)
       if(verbose) cat(".")
       return(ans)
     }

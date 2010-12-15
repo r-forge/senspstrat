@@ -101,3 +101,30 @@
 
 .makeBootstrapLenIndx <- function(s, indx.seq, N)
   sample(indx.seq, N, replace=TRUE)
+
+.calcPiPhiPsi <- function(Pi=Pi, phi=phi, psi=psi, p0=p0, p1=p1) {
+  if(!missing(psi) && !is.null(psi)) {
+    return(list(sens.var = "psi",
+                Pi = Pi <- 
+                ifelse(abs(psi) < sqrt(.Machine$double.eps), p0*p1,
+                       -(sqrt((p1^2-2*p0*p1+p0^2)*exp(2*psi)+p1^2
+                              +exp(psi)
+                              *(-2*p1^2+2*p1-2*p0^2+2*p0)
+                              +(2*p0-2)*p1+p0^2-2*p0+1)
+                         +p1+exp(psi)*(-p1-p0)+p0-1)
+                       /(2*exp(psi)-2)),
+                psi=psi,
+                phi = Pi/p1))
+  } else if(!missing(phi) && !is.null(phi)) {
+    return(list(sens.var="phi",
+                Pi = p1*phi,
+                psi = log((p1 * phi^2 + (1 - p0 - p1)*phi)/
+                          (p1 * phi^2 - (p1 + p0)* phi + p0)),
+                phi=phi))
+  } else {
+    return(list(sens.var = "Pi",
+                Pi=Pi,
+                psi = log(Pi * (1 - p1 - p0 + Pi)/(p1 - Pi)/(p0 - Pi)),
+                phi = Pi/p1))
+  }
+}

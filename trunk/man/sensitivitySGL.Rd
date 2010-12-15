@@ -10,7 +10,7 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
                groupings, empty.principal.stratum, ci=0.95,
                ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
                N.boot = 100L, oneSidedTest = FALSE, twoSidedTest = TRUE,
-               verbose = getOption("verbose"))
+               verbose = getOption("verbose"), isSlaveMode = FALSE)
 }
 \arguments{
   \item{z}{
@@ -85,6 +85,9 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
   }
   \item{verbose}{
     logical;  prints dots when bootstrapping to show that something is happening.
+  }
+  \item{isSlaveMode}{
+    logical.  Internal Use only. Used in recursion.
   }
 }
 \details{
