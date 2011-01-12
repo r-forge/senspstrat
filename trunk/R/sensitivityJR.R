@@ -1,19 +1,20 @@
 sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                           selection, groupings, ci=0.95,
                           ci.method=c("analytic", "bootstrap"), na.rm=FALSE,
-                          N.boot=100, oneSidedTest = FALSE,
-                          twoSidedTest = TRUE, verbose=getOption("verbose"),
-                          isSlaveMode=FALSE)
+                          N.boot=100, interval=c(-100,100),
+                          oneSidedTest = FALSE, twoSidedTest = TRUE,
+                          verbose=getOption("verbose"), isSlaveMode=FALSE)
 {
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
   withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
                  'analytic' %in% ci.method)
 
-  calc.coefs <- function(y, beta, dF, RR) {
+  calc.coefs <- function(y, beta, dF, RR, interval) {
     coefs <- vector(length(beta), "list")
 
     for(i in seq_along(beta)) {
-      alphahat <- .calc.alphahat(beta.y=beta[i]*y, dF=dF, C=RR)
+      alphahat <- .calc.alphahat(beta.y=beta[i]*y, dF=dF, C=RR,
+                                 interval=interval)
       w <- .calc.w(alpha=alphahat, beta.y=beta[i]*y)
       coefs[[i]] <- list(alphahat=alphahat, w=w)
     }
@@ -61,8 +62,11 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
   }
-  
-  ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
+
+  if(withoutCi)
+    ci.method <- NULL
+  else
+    ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
 
   z0.s1 <- !z & s
   z1.s1 <- z & s
@@ -100,9 +104,6 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   F1 <- Fn1(y1.uniq)
   dF1 <- diff(c(0, F1))
 
-  q0c <- matrix(quantile(y0, probs=c(Pi/p0, 1-Pi/p0)), ncol=2)
-  q1c <- matrix(quantile(y1, probs=c(Pi/p1, 1-Pi/p1)), ncol=2)
-  
   ACE.dim <- c(length(beta0), length(beta1), length(Pi))
   ACE.length <- prod(ACE.dim)
   ACE.dimnames <- list(format(beta0, trim=TRUE),
@@ -141,14 +142,21 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                       dimnames=FnAs1.dimnames)
   }
 
+  a0 <- Pi/p0
+  a1 <- Pi/p1
+    
   for(i in seq_along(Pi)) {
     if(phi[i] == 1) {
-      ACE.info <- sensitivityGBH(z=z,s=s,y=y,beta=beta0, ci.method=NULL,
-                                 isSlaveMode=TRUE)
-
+      ACE.info <- sensitivityGBH(z=z,s=s,y=y,beta=beta0,
+                                 groupings=FALSE,
+                                 ci.method=ci.method, isSlaveMode=TRUE)
+      
+      if(!withoutCdfs) {
+        alphahat0[,i] <- ACE.info$alphahat
+        alphahat1[,i] <- NA
+      }        
+      
       ACE[,,i] <- ACE.info$ACE
-      alphahat0[,i] <- ACE.info$alphahat
-      alphahat1[,i] <- NA
       next
     }
     
@@ -160,24 +168,26 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       next
     }
     
-    a0 <- Pi[i]/p0
-    a1 <- Pi[i]/p1
-    
+    q0c <- quantile(y0, probs=c(a0[i], 1-a0[i]))
+    q1c <- quantile(y1, probs=c(a1[i], 1-a1[i]))
+  
     for(j in seq_along(beta0)) {
       if(is.finite(beta0[j])) {
-        alphahat0[j,i] <- .calc.alphahat(beta.y=beta0[j]*y0.uniq, dF=dF0, C=a0)
+        alphahat0[j,i] <- .calc.alphahat(beta.y=beta0[j]*y0.uniq, dF=dF0,
+                                         C=a0[i],
+                                         interval=interval)
         w0 <- .calc.w(alpha=alphahat0[j,i], beta.y=beta0[j]*y0.uniq)
 
-        dFas0 <- dF0*w0/a0
+        dFas0 <- dF0*w0/a0[i]
         if(!isSlaveMode)
           Fas0 <- cumsum(dFas0)
         
         mu0[j,i] <- sum(y0.uniq * dFas0)
       } else {
         if(beta0[j] == Inf) {
-          Fas0 <- ifelse(y0.uniq <= q0c[i,1L] & F0 < a0, F0/a0, 1)
+          Fas0 <- ifelse(y0.uniq <= q0c[1L] & F0 < a0[i], F0/a0[1], 1)
         } else if(beta0[j] == -Inf) {
-          Fas0 <- ifelse(y0.uniq >= q0c[i,2L], (F0 - (1 - a0))/a0, 0)
+          Fas0 <- ifelse(y0.uniq >= q0c[2L], (F0 - (1 - a0[i]))/a0[i], 0)
         } else {
           stop("Invalid beta0 value ", beta0[j])
         }
@@ -193,10 +203,12 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     
     for(j in seq_along(beta1)) {
       if(is.finite(beta1[j])) {
-        alphahat1[j,i] <- .calc.alphahat(beta.y=beta1[j]*y1.uniq, dF=dF1, C=a1) 
+        alphahat1[j,i] <- .calc.alphahat(beta.y=beta1[j]*y1.uniq, dF=dF1,
+                                         C=a1[i],
+                                         interval=interval)
         w1 <- .calc.w(alpha=alphahat1[j,i], beta.y=beta1[j]*y1.uniq)
 
-        dFas1 <- dF1*w1/a1
+        dFas1 <- dF1*w1/a1[i]
 
         if(!isSlaveMode)
           Fas1 <- cumsum(dFas1)
@@ -204,9 +216,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
         mu1[j,i] <- sum(y1.uniq * dFas1)
       } else if(is.infinite(beta1[j])) {
         if(beta1[j] == Inf) {
-          Fas1 <- ifelse(y1.uniq <= q1c[i,1L] & F1 < a1, F1/a1, 1L)
+          Fas1 <- ifelse(y1.uniq <= q1c[1L] & F1 < a1[i], F1/a1[i], 1L)
         } else if(beta1[j] == -Inf) {
-          Fas1 <- ifelse(y1.uniq >= q1c[i,2L], (F1 - a1)/(a1), 0L)
+          Fas1 <- ifelse(y1.uniq >= q1c[2L], (F1 - a1[i])/(a1[i]), 0L)
         }
 
         alphahat1[j,i] <- NA
@@ -222,42 +234,44 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     ACE[,,i] <- outer(mu0[,i], mu1[,i], function(mu0, mu1) mu1 - mu0)
   }
   
-  if(isSlaveMode)
+  if(withoutCdfs)
     return(list(ACE=ACE))
 
   cdfs<-list(beta0=beta0, alphahat0=alphahat0, Fas0=FnAs0,
              beta1=beta1, alphahat1=alphahat1, Fas1=FnAs1,
              phi=phi, Pi=Pi, psi=psi)
 
-  if(is.null(ci))
+  if(withoutCi)
     return(c(list(ACE=ACE), cdfs))
   
-  if(twoSidedTest) {
-    if(ci < 0.5)
-      ci.probs <- c(ci, 1L) - ci/2L
-    else
-      ci.probs <- c(0L, ci) + (1-ci)/2
-  } else {
-    ci.probs <- NULL
-  }
+  if(!isSlaveMode) {
+    if(twoSidedTest) {
+      if(ci < 0.5)
+        ci.probs <- c(ci, 1L) - ci/2L
+      else
+        ci.probs <- c(0L, ci) + (1-ci)/2
+    } else {
+      ci.probs <- NULL
+    }
 
-  if(oneSidedTest) {
-    ci.probs <- c(ci.probs, ci)
-  }
+    if(oneSidedTest) {
+      ci.probs <- c(ci.probs, ci)
+    }
 
-  ci.probs <- sort(unique(ci.probs))
-  ci.probsLen <- length(ci.probs)
+    ci.probs <- sort(unique(ci.probs))
+    ci.probsLen <- length(ci.probs)
   
-  ACE.ci.dim <- c(ACE.dim, length(ci.method), ci.probsLen)
-  ACE.ci.length <- prod(ACE.ci.dim)
-  ACE.ci.dimnames <- c(ACE.dimnames,
-                       list(ci.prob=sprintf("%s%%",
-                                             as.character(ci.probs*100)),
-                            ci.method=ci.method))
+    ACE.ci.dim <- c(ACE.dim, ci.probsLen, length(ci.method))
+    ACE.ci.length <- prod(ACE.ci.dim)
+    ACE.ci.dimnames <- c(ACE.dimnames,
+                         list(ci.prob=sprintf("%s%%",
+                                as.character(ci.probs*100)),
+                              ci.method=ci.method))
   
-  ACE.ci <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
-                  dimnames=ACE.ci.dimnames)
-
+    ACE.ci <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
+                    dimnames=ACE.ci.dimnames)
+  }
+  
   ACE.var.dim <- c(ACE.dim, length(ci.method))
   ACE.var.length <- prod(ACE.var.dim)
   ACE.var.dimnames <- c(ACE.dimnames, list(ci.method=ci.method))
@@ -272,7 +286,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     
     Omega <- matrix(nrow=6,ncol=6)
     for(k in seq_along(Pi)) {
-      for(i in seq_along(beta0)) {
+      if(phi[k] == 1) {
+        ACE.var[i, j, k, "analytic"] <- ACE.info$ACE.var
+      } else for(i in seq_along(beta0)) {
         for(j in seq_along(beta1)) {
           U <- rbind((1-z)*(p0 - s),
                      (z)*(p1 - s),
@@ -345,14 +361,20 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     calculateCi <- function(i, norm, ACE, sqrt.ACE.var) {
       ACE[i] + norm * sqrt.ACE.var[i]
     }
-    
-    ACE.ci[,,,,"analytic"] <- outer(seq_along(ACE), qnorm(ci.probs),
-                                   FUN=calculateCi, ACE=ACE,
-                                   sqrt.ACE.var=sqrt(ACE.var[,,,'analytic']))
+
+    if(!isSlaveMode) {
+      ACE.ci[,,,,"analytic"] <- outer(seq_along(ACE), qnorm(ci.probs),
+                                      FUN=calculateCi, ACE=ACE,
+                                      sqrt.ACE.var=sqrt(ACE.var[,,,'analytic']))
+    }
     
     if(verbose) cat("\n")
   }
 
+  if(isSlaveMode) {
+    return(c(list(ACE=ACE, ACE.var=ACE.var), cdfs))
+  }
+    
   if(any(ci.method == "bootstrap")) {
     if(verbose) cat("running Bootstrap")
     ACE.list <- array(dim=c(ACE.dim,N.boot))

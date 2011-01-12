@@ -46,18 +46,18 @@
               KMAns=KMAns, i=seq_along(beta.tplus)))
 }
 
-.calcSGL.coeff.smp <- function(beta, KM0, dF0, tau, time.points, RR) {
+.calcSGL.coeff.smp <- function(beta, KM0, dF0, tau, time.points, RR, interval) {
   com <- .calcSGLCoeffCommon(beta, KM0, tau, time.points)
   
   return(mapply(FUN=.calcSGLBetaCoeffBasic,
                 i=com$i, beta=beta, beta.tplus=com$beta.tplus,
                 MoreArgs=list(q.index=com$q.index, KMAns=com$KMAns, dF0=dF0,
-                  RR=RR),
+                  RR=RR, interval=interval),
                 SIMPLIFY=FALSE, USE.NAMES=FALSE))
 }
 
 .calcSGL.coeff.adv <- function(beta, KM0, dF0, p0, t0, n0, N0, n1, N1, tau,
-                           time.points, RR) {
+                           time.points, RR, interval) {
 
   com <- .calcSGLCoeffCommon(beta, KM0, tau, time.points)
 
@@ -65,7 +65,8 @@
                    i=com$i, beta=beta, beta.tplus=com$beta.tplus,
                    MoreArgs=list(q.list=com$q.list, q.index=com$q.index,
                      KMAns=com$KMAns, dF0=dF0, p0=p0, n0=n0, N0=N0,
-                     n1=n1, N1=N1, RR=RR, len.F=length(KM0$t)),
+                     n1=n1, N1=N1, RR=RR, len.F=length(KM0$t),
+                     interval=interval),
                    USE.NAMES=FALSE, SIMPLIFY=FALSE)
 
   return(coeffs)
@@ -126,13 +127,13 @@
 }
 
 .calcSGLBetaCoeffBasic <- function(i, beta, beta.tplus, q.index, KMAns, dF0,
-                                  RR) {
+                                  RR, interval) {
   if(is.infinite(beta)) {
     return(c(list(i=i, alphahat=NA),
              .calcSGLInfCoeffBasic(beta, KMAns, RR)))
   }
 
-  alphahat <- .calc.alphahat(beta.tplus, dF0, RR)
+  alphahat <- .calc.alphahat(beta.y=beta.tplus, dF=dF0, C=RR, interval=interval)
 
   if(all.equal(beta, 0) == TRUE)
     return(list(i=i, alphahat=alphahat, Fas=KMAns$Fas))
@@ -148,13 +149,13 @@
 }
 
 .calcSGLBetaCoeffAdv <- function(i, beta, beta.tplus, q.list, q.index, KMAns, dF0,
-                             p0, n0, N0, n1, N1, RR, len.F) {
+                             p0, n0, N0, n1, N1, RR, len.F, interval) {
   if(is.infinite(beta)) {
     return(c(list(i=i, alphahat=NA),
              .calcSGLInfCoeffAdv(beta, KMAns, RR, n0, N0, n1, N1)))
   }
   
-  alphahat <- .calc.alphahat(beta.tplus, dF0, RR)
+  alphahat <- .calc.alphahat(beta.y=beta.tplus, dF=dF0, C=RR, interval=interval)
 
   if(all.equal(beta, 0) == TRUE) {
     Fas <- KMAns$Fas
@@ -203,9 +204,9 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
                            selection, trigger, groupings,
                            empty.principal.stratum,
                            ci=0.95, ci.method=c("analytic", "bootstrap"),
-                           na.rm=FALSE, N.boot=100L, oneSidedTest=FALSE,
-                           twoSidedTest=TRUE, verbose=getOption("verbose"),
-                           isSlaveMode=FALSE) {
+                           na.rm=FALSE, N.boot=100L, interval=c(-100,100),
+                           oneSidedTest=FALSE, twoSidedTest=TRUE,
+                           verbose=getOption("verbose"), isSlaveMode=FALSE) {
 
   ## z - group that subject belongs to
   ## s - subject met selection cirteria
@@ -304,11 +305,13 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
 
   if(doAnalyticCi) {
     coeffs0 <- .calcSGL.coeff.adv(beta=beta, KM0=KM0, dF0=dF0, p0=p0,
-                              n0=n0, N0=N0, n1=n1, N1=N1, tau=tau[1],
-                                 time.points=time.points, RR=RR)
+                                  n0=n0, N0=N0, n1=n1, N1=N1, tau=tau[1],
+                                  time.points=time.points, RR=RR,
+                                  interval=interval)
   } else {
     coeffs0 <- .calcSGL.coeff.smp(beta=beta, KM0=KM0, dF0=dF0, tau=tau[1],
-                                   time.points=time.points, RR=RR)
+                                  time.points=time.points, RR=RR,
+                                  interval=interval)
   }
 
   coeff1 <- .calcSGLF1(time.points=time.points, KM1)

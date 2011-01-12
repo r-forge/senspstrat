@@ -1,5 +1,5 @@
 .calc.coeff <- function(Pi, p0, p1, beta0, beta1, dF0, dF1, 
-                       t0, t1, tau0, tau1, time.points) {
+                       t0, t1, tau0, tau1, time.points, interval) {
   calc.time.seq <- function(time.point, times) which(times <= time.point)
   
   q.seq.list <- lapply(time.points, t0, FUN=calc.time.seq)
@@ -27,23 +27,24 @@
                    MoreArgs=list(beta.tplus0=beta.tplus0,
                      beta.tplus1=beta.tplus1,
                      q.seq.list=q.seq.list, r.seq.list=r.seq.list,
-                     dF0=dF0, dF1=dF1),
+                     dF0=dF0, dF1=dF1, interval=interval),
                    USE.NAMES = FALSE, SIMPLIFY=FALSE)
   return(coeffs)
 }
 
 .calc.Pi.coeff <- function(Pi..p0, Pi..p1, i, beta.tplus0, beta.tplus1,
                           q.seq.list, r.seq.list, dF0, dF1, dV, dW, VmF0, WmF1,
-                          p0, p1) {
+                          p0, p1, interval) {
   beta0.coeff <- lapply(beta.tplus0, q.list=q.seq.list, dF=dF0, Pi..p=Pi..p0,
-                        FUN=.calc.beta.coeff)
+                        interval=interval, FUN=.calc.beta.coeff)
   beta1.coeff <- lapply(beta.tplus1, q.list=r.seq.list, dF=dF1, Pi..p=Pi..p1,
-                        FUN=.calc.beta.coeff)
+                        interval=interval, FUN=.calc.beta.coeff)
 
   return(list(beta0.coeff=beta0.coeff, beta1.coeff=beta1.coeff, i=i))
 }    
 
-.calc.beta.coeff <- function(beta.tplus, q.list, dV, dF, p, Pi..p, Pi.N) {
+.calc.beta.coeff <- function(beta.tplus, q.list, dV, dF, p, Pi..p, Pi.N,
+                             interval) {
   calc.alphahat <- function(beta.tplus, dF, B) {
     ee <- function(a, beta.tplus, dF, B) {
       tmp <- sum((1L + exp(-a - beta.tplus))^(-1) * dF) - B
@@ -81,9 +82,10 @@
     return(alphahat)
   }
 
-  alphahat <- calc.alphahat(beta.tplus$bt, dF=dF, B=Pi..p)
+  alphahat <- .calc.alphahat(beta.y=beta.tplus$bt, dF=dF, C=Pi..p,
+                             interval=interval)
 
-  w <- (1L + exp(-alphahat - beta.tplus$bt))^(-1)
+  w <- .calc.w(alpha=alphahat, beta.y=beta.tplus$bt)
 
   SCE <- sapply(q.list, w.dF=w*dF,
                 FUN=function(q.seq, w.dF) sum(w.dF[q.seq])) / Pi..p
@@ -96,6 +98,7 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                            selection, trigger, groupings,
                            ci=0.95, ci.method=c("bootstrap", "analytic"),
                            na.rm=FALSE, N.boot=100L, N.events=NULL,
+                           interval=c(-100,100),
                            oneSidedTest=FALSE, twoSidedTest=TRUE,
                            inCore=TRUE, verbose=getOption("verbose"),
                            colsPerFile=1000L, isSlaveMode=FALSE) {
@@ -227,8 +230,9 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
   dF1 <- diff(c(0L,F1,1L))
 
   coeffs <- .calc.coeff(Pi=Pi, p0=p0, p1=p1, beta0=beta0, beta1=beta1,
-                       dF0=dF0, dF1=dF1, t0=t0, t1=t1, tau0=tau[1], tau1=tau[2],
-                       time.points=time.points)
+                        dF0=dF0, dF1=dF1, t0=t0, t1=t1, tau0=tau[1],
+                        tau1=tau[2], time.points=time.points,
+                        interval=interval)
 
   SCE.dim <- c(length(beta0), length(beta1), length(psi), length(time.points))
   SCE.length <- prod(SCE.dim)

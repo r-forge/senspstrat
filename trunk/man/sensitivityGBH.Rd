@@ -11,7 +11,8 @@
 sensitivityGBH(z, s, y, beta, selection, groupings,
                empty.principal.stratum, ci = 0.95,
                ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
-               N.boot = 100, oneSidedTest = FALSE, twoSidedTest = TRUE,
+               N.boot = 100, interval = c(-100, 100),
+               oneSidedTest = FALSE, twoSidedTest = TRUE,
                isSlaveMode=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -63,6 +64,10 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   \item{N.boot}{
     integer; number of bootstrap repetitions that will be run when
     \code{ci.method} includes \dQuote{bootstrap}.
+  }
+  \item{interval}{
+    numeric vector of length 2. Controls the range limits used to
+    by optimise to estimate alphahat.
   }
   \item{oneSidedTest}{
     logical.  Return a one sided confidence interval for ACE. Defaults

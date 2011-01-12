@@ -31,8 +31,8 @@
 .alpha.est <- function(alpha, beta.y, dF, C)
   sum(log(1L + exp(alpha + beta.y)) * dF) - alpha*C
 
-.calc.alphahat <- function(beta.y, dF, C) {
-  alphahat <- optimize(f=.alpha.est, interval=c(-100L, 100L), beta.y=beta.y,
+.calc.alphahat <- function(beta.y, dF, C, interval) {
+  alphahat <- optimize(f=.alpha.est, interval=interval, beta.y=beta.y,
                        dF=dF, C=C)$minimum
   
   if(alphahat > 90 || alphahat < -90) {
@@ -105,16 +105,16 @@
 .calcPiPhiPsi <- function(Pi=Pi, phi=phi, psi=psi, p0=p0, p1=p1) {
   if(!missing(psi) && !is.null(psi)) {
     return(list(sens.var = "psi",
-                Pi = Pi <- 
-                ifelse(abs(psi) < sqrt(.Machine$double.eps), p0*p1,
-                       -(sqrt((p1^2-2*p0*p1+p0^2)*exp(2*psi)+p1^2
-                              +exp(psi)
-                              *(-2*p1^2+2*p1-2*p0^2+2*p0)
-                              +(2*p0-2)*p1+p0^2-2*p0+1)
-                         +p1+exp(psi)*(-p1-p0)+p0-1)
-                       /(2*exp(psi)-2)),
+                Pi = Pi <- ifelse(psi == Inf, p1, 
+                  ifelse(abs(psi) < sqrt(.Machine$double.eps), p0*p1,
+                         -(sqrt((p1^2-2*p0*p1+p0^2)*exp(2*psi)+p1^2
+                                +exp(psi)
+                                *(-2*p1^2+2*p1-2*p0^2+2*p0)
+                                +(2*p0-2)*p1+p0^2-2*p0+1)
+                           +p1+exp(psi)*(-p1-p0)+p0-1)
+                         /(2*exp(psi)-2))),
                 psi=psi,
-                phi = Pi/p1))
+                phi = ifelse(psi == Inf, 1, Pi/p1)))
   } else if(!missing(phi) && !is.null(phi)) {
     return(list(sens.var="phi",
                 Pi = p1*phi,

@@ -9,7 +9,8 @@
 sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
                groupings, empty.principal.stratum, ci=0.95,
                ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
-               N.boot = 100L, oneSidedTest = FALSE, twoSidedTest = TRUE,
+               N.boot = 100L, interval = c(-100, 100),
+               oneSidedTest = FALSE, twoSidedTest = TRUE,
                verbose = getOption("verbose"), isSlaveMode = FALSE)
 }
 \arguments{
@@ -74,6 +75,10 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
   \item{N.boot}{
     integer; number of bootstrap repetitions that will be run when 
     \code{ci.method} includes \dQuote{bootstrap}.
+  }
+  \item{interval}{
+    numeric vector of length 2. Controls the range limits used to
+    by optimise to estimate alphahat.
   }
   \item{oneSidedTest}{
     logical.  Return a one sided confidence interval for

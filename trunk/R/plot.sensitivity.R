@@ -122,6 +122,8 @@ plot.sensitivity.2.0d <- function(x, xlim, ylim,
           sub=bquote(.(as.symbol(names(dimnames(ACE))[3])) == .(format(as.numeric(dimnames(ACE)[[c(3,i)]]), digits=3))),
           ...)
 
+    contour(beta0.fin,beta1.fin,reject.fin[,,i],add=TRUE, lty=3,
+            levels=seq(from=-1, to=1, length.out=21),,labcex=0.8, axes=FALSE)
     axis(side=1,at=beta0,label=format(beta0, digits=1,trim=TRUE,drop0trailing=TRUE), line=NA)
     axis(side=2,at=beta1,label=format(beta1, digits=1,trim=TRUE,drop0trailing=TRUE), line=NA)
   }

@@ -14,6 +14,7 @@ sensitivitySGD(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                time.points, selection, trigger, groupings,
                ci=0.95, ci.method = c("bootstrap", "analytic"),
                na.rm = FALSE, N.boot = 100L, N.events = NULL,
+               interval = c(-100, 100),
                oneSidedTest = FALSE, twoSidedTest = TRUE, inCore = TRUE,
                verbose = getOption("verbose"), colsPerFile = 1000L,
                isSlaveMode = FALSE)
@@ -90,6 +91,10 @@ sensitivitySGD(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
   \item{N.events}{
     integer; number of selection-events (S) for each bootstrap
     replication when doing selection-event based bootstrapping.
+  }
+  \item{interval}{
+    numeric vector of length 2. Controls the range limits used to
+    by optimise to estimate alphahat.
   }
   \item{oneSidedTest}{
     logical.  Return a one sided confidence interval for

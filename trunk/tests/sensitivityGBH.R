@@ -44,3 +44,17 @@ ans
 stopifnot(is.list(ans))
 stopifnot(inherits(ans,"sensitivity"))
 stopifnot(inherits(ans,"sensitivity.0d"))
+
+ans<-with(vaccine.trial,
+          sensitivityGBH(z=treatment,s=hiv.outcome,y=logVL,
+                    beta=c(-Inf, seq(-5,5,length=21),Inf),
+                    selection="infected",
+                    groupings=c("placebo","vaccine"),
+                    empty.principal.stratum=c("not infected","infected"),
+                    ci.method="bootstrap",
+                    N.boot=1000)
+         )
+ans
+stopifnot(is.list(ans))
+stopifnot(inherits(ans,"sensitivity"))
+stopifnot(inherits(ans,"sensitivity.0d"))
