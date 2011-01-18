@@ -35,8 +35,8 @@
   alphahat <- optimize(f=.alpha.est, interval=interval, beta.y=beta.y,
                        dF=dF, C=C)$minimum
   
-  if(alphahat > 90 || alphahat < -90) {
-    warning("optimize overflow alphahat value invalid")
+  if(alphahat > max(interval) - 10 || alphahat < min(interval) + 10) {
+    warning("optimize overflow alphahat value invalid, alphahat = ", alphahat)
   }
   
   alphahat

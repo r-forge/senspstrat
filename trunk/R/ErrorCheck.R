@@ -225,7 +225,7 @@
     return("'z' argument must be supplied")
 
   ErrMsg <- NULL
-  if(any(is.na(z)) && na.rm)
+  if(any(is.na(z)) && !na.rm)
     ErrMsg <- c(ErrMsg,
                 "'z' cannot contain any NA values")
 
@@ -259,7 +259,7 @@
 
 
 
-.CheckY <- function(y, s, selection, ...) {
+.CheckY <- function(y, s, selection, na.rm, ...) {
   ## y must be
   ## 1. not missing
   ## 2. cannot be NA is s is selected.
@@ -268,8 +268,8 @@
     return("'y' argument must be supplied")
 
   ErrMsg <- NULL
-  if(!missing(selection) && !missing(s) && length(s) == length(y) &&
-     any(selection %in% s) &&
+  if(!missing(selection) && !missing(s) && !na.rm &&
+     length(s) == length(y) && any(selection %in% s) &&
      any(s %in% selection & !is.na(s) & is.na(y)))
     ErrMsg <- c(ErrMsg,
                 sprintf("argument 'y' cannont contain a NA value if the corresponding 's' is %s",
@@ -277,7 +277,7 @@
   return(ErrMsg)
 }
 
-.CheckD <- function(d, s, selection) {
+.CheckD <- function(d, s, selection, na.rm) {
   ## d must be
   ## 1. not missing
   ## 2. cannot be NA is s is selected.
@@ -286,89 +286,11 @@
     return("'d' argument must be supplied")
 
   ErrMsg <- NULL
-  if(!missing(selection) && !missing(s) && length(s) == length(d) &&
-     any(selection %in% s) &&
+  if(!missing(selection) && !missing(s) && !na.rm &&
+     length(s) == length(d) && any(selection %in% s) &&
      any(s %in% selection & !is.na(s) & is.na(d)))
     ErrMsg <- c(ErrMsg,
                 sprintf("argument 'd' cannot contain a NA value if the corresponding 's' is %s", paste(selection, collapse=",")))
 
   return(ErrMsg)
-}
-
-.ComputePiPsiPhi <- function(call = match.call(definition=sys.function(sys.parent()),
-                               call=sys.call(sys.parent())),
-                             envir=parent.frame(n=2),
-                             p0, p1) {
-  ## Assume only one of Pi, psi, or phi is present.  Calculate other two values.
-  .ComputeFunc <- function(psi, Pi, phi, ..., p0, p1){
-    if(!missing(psi) && !is.null(psi)) {
-      Pi <-
-        ifelse(abs(psi) < sqrt(.Machine$double.eps), p0*p1,
-               -(sqrt((p1^2-2*p0*p1+p0^2)*exp(2*psi)+p1^2
-                      +exp(psi)
-                      *(-2*p1^2+2*p1-2*p0^2+2*p0)
-                      +(2*p0-2)*p1+p0^2-2*p0+1)
-                 +p1+exp(psi)*(-p1-p0)+p0-1)
-               /(2*exp(psi)-2))
-
-      phi <- Pi/p1
-    } else if(!missing(phi) && !is.null(phi)) {
-      Pi <- p1*phi
-      psi <- log((p1 * phi^2 + (1 - p0 - p1)*phi)/
-                 (p1 * phi^2 - (p1 + p0)* phi + p0))
-    } else {
-      psi <- log(Pi * (1 - p1 - p0 + Pi)/(p1 - Pi)/(p0 - Pi))
-      phi <- Pi/p1
-    }
-
-    return(list(psi = psi, Pi=Pi, phi=phi))
-  }
-
-  call[[1]] <- .ComputeFunc
-  eval(call, envir=data.frame(p0=p0, p1=p1), enclos=envir)
-}
-
-.RunCheck <- function(checks,
-                      parentCall=match.call(definition=sys.function(sys.parent()),
-                        call=sys.call(sys.parent())),
-                      envir=parent.frame(n=2)) {
-
-  ErrMsg <- NULL
-  for(check in checks) {
-    if(is.character(check)) {
-      check <- as.symbol(check)
-    }
-
-    parentCall[[1]] <- check
-    ErrMsg <- c(ErrMsg, eval(parentCall, envir=envir))
-  }
-
-  return(ErrMsg)
-}
-
-.RunCompute <- function(check, ...,
-                        parentCall=match.call(definition=sys.function(sys.parent()),
-                          call=sys.call(sys.parent())),
-                        envir=parent.frame(n=2)) {
-    pNames <- names(parentCall)
-
-    if(is.null(pNames))
-      pNames <- ""
-    
-    thisCall <- match.call(expand.dots=FALSE)
-
-    dotNames <- names(thisCall[['...']])
-    dotNames <- dotNames[dotNames != ""]
-    
-    ## Ensure no name overlap
-    if(any(dotNames  %in% names(parentCall))) {
-      parentCall[names(thisCall[['...']]) %in% names(parentCall)] <- NULL
-    }
-
-    parentCall[seq.int(from=length(parentCall)+1L,
-                       length.out=length(dotNames))] <- match.call()[dotNames]
-    names(parentCall) <- c(pNames, dotNames)
-
-    parentCall[[1]] <- as.name(check)
-    eval(parentCall, envir=parent.frame())
 }

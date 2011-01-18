@@ -28,24 +28,23 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                 .CheckSelection(selection, s, empty.principal.stratum),
                 .CheckGroupings(groupings),
                 .CheckLength(z=z, s=s, y=y),
-                .CheckZ(z, groupings, na.rm),
-                .CheckS(s, empty.principal.stratum, na.rm),
-                .CheckY(y, s, selection))
+                .CheckZ(z, groupings, na.rm=na.rm),
+                .CheckS(s, empty.principal.stratum, na.rm=na.rm),
+                .CheckY(y, s, selection, na.rm=na.rm))
 
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
 
+    s <- s == selection
+
     if(na.rm == TRUE) {
-      naIndex <- !(is.na(s) | is.na(z))
+      naIndex <- !(is.na(s) | is.na(z) | (s & is.na(y)))
 
       z <- z[naIndex]
       s <- s[naIndex]
       y <- y[naIndex]
     }
     
-
-    s <- s == selection
-
     GroupReverse <- FALSE
     if(empty.principal.stratum[1] == selection) {
       z <- z == groupings[1]

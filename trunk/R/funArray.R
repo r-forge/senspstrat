@@ -34,7 +34,7 @@ funVector <- function(length = 0) {
   cl <- oldClass(x)
   class(x) <- NULL
   
-  x <- NextMethod(.Generic)
+  x <- NextMethod('[')
 
   if(is.array(x))
     class(x) <- cl

@@ -30,26 +30,24 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                 .CheckGroupings(groupings),
                 .CheckPhiPiPsi(phi=phi, Pi=Pi, psi=psi),
                 .CheckLength(z=z, s=s, y=y),
-                .CheckZ(z, groupings, na.rm),
+                .CheckZ(z, groupings, na.rm=na.rm),
                 .CheckS(s, na.rm=na.rm),
-                .CheckY(y, s, selection))
+                .CheckY(y, s, selection, na.rm=na.rm))
     
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
-
-    if(na.rm == TRUE) {
-      naIndex <- !(is.na(s) | is.na(z) | (s & (is.na(d) | is.na(y))))
-
-      z <- z[naIndex]
-      s <- s[naIndex]
-      d <- d[naIndex]
-      y <- y[naIndex]
-    }
 
     s <- s == selection
     
     z <- z == groupings[2L]
 
+    if(na.rm == TRUE) {
+      naIndex <- !(is.na(s) | is.na(z) | (s & (is.na(y))))
+
+      z <- z[naIndex]
+      s <- s[naIndex]
+      y <- y[naIndex]
+    }
 
     if(any(is.na(z) | is.na(s)))
       stop("s, z cannot contain any NA values")
@@ -153,7 +151,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       
       if(!withoutCdfs) {
         alphahat0[,i] <- ACE.info$alphahat
+        FnAs0[,i] <- ACE.info$FnAs0
         alphahat1[,i] <- NA
+        FnAs1[,i] <- ACE.info$FnAs1
       }        
       
       ACE[,,i] <- ACE.info$ACE

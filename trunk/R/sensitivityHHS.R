@@ -110,9 +110,9 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                 .CheckSelection(selection, s, empty.principal.stratum),
                 .CheckGroupings(groupings),
                 .CheckLength(z=z, s=s, y=y),
-                .CheckZ(z, groupings, na.rm),
-                .CheckS(s, empty.principal.stratum, na.rm),
-                .CheckY(y, s, selection))
+                .CheckZ(z, groupings, na.rm=na.rm),
+                .CheckS(s, empty.principal.stratum, na.rm=na.rm),
+                .CheckY(y, s, selection, na.rm=na.rm))
 
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
