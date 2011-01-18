@@ -31,19 +31,18 @@ funVector <- function(length = 0) {
 }
 
 '[.funArray' <- function(x, ..., drop=TRUE) {
-  cl <- oldClass(x)
-  class(x) <- NULL
-  
-  x <- NextMethod('[')
+  y <- NextMethod('[')
 
-  if(is.array(x))
-    class(x) <- cl
-  else if(length(x) == 1)
-    return(x[[1]])
-  else
-    class(x) <- ifelse(cl == 'funArray', 'funVector', cl)
+  cl <- oldClass(x)
   
-  x
+  if(is.array(y))
+    class(y) <- cl
+  else if(length(y) == 1)
+    return(y[[1]])
+  else
+    class(y) <- ifelse(cl == 'funArray', 'funVector', cl)
+  
+  y
 }
 
 ## 'str.funVector' <- function(x, ...) {
