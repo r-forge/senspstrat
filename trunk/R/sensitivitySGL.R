@@ -38,14 +38,14 @@
   q.list <- .calc.time.seq.list(time.points, KM0$t)
   q.index <- unlist(lapply(q.list, FUN=sum))
 
-  tvals <- beta.tplus <- .calc.beta.tplus.list(beta, KM0$t, tau)
+  tvals <- .calc.beta.tplus.list(beta, KM0$t, tau)
 
   KMAns <- KM0[ifelse(q.index == 0L, NA, q.index),]
   KMAns[q.index == 0L,] <- 0
 
   return(list(q.list=q.list, q.index=q.index, beta.tplus=tvals$beta.tplus,
               tplus=tvals$tplus,
-              KMAns=KMAns, i=seq_along(beta.tplus)))
+              KMAns=KMAns, i=seq_along(beta)))
 }
 
 ## .calcSGL.coeff.smp <- function(beta, KM0, dF0, tau, time.points, RR, interval) {
