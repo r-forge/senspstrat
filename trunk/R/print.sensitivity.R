@@ -50,7 +50,9 @@ print.sensitivity.1d <- function(x, ...) {
         "\n")
   }
   
-  cat("SCE:\t", paste("E(Y(", labs$z1, ") - Y(", labs$z0,") | S(", labs$z0,
+  cat("SCE:\t", paste("P(T(", labs$z0, ") =< t | S(", labs$z0,
+                      ") = S(", labs$z1, ") = ",labs$selected,") - ",
+                      "P(T(", labs$z1, ") =< t | S(", labs$z0,
                       ") = S(", labs$z1, ") = ",labs$selected,")", sep=''),
       "\n")
 
