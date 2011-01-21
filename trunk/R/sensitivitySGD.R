@@ -75,8 +75,10 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                            colsPerFile=1000L, isSlaveMode=FALSE) {
 
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
-  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
-                                'analytic' %in% ci.method)
+  withoutCi <- ((!isSlaveMode && !missing(ci.method) && ci.method == "") ||
+                (isSlaveMode && !(!missing(ci.method) &&
+                                 !is.null(ci.method) &&
+                                 'analytic' %in% ci.method)))
 
   ## z - group that subject belongs to
   ## s - subject met selection cirteria
@@ -157,6 +159,7 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
     }
 
   tmp <- .calcPiPhiPsi(Pi=Pi, phi=phi, psi=psi, p0=p0, p1=p1)
+  str(tmp)
   Pi <- tmp$Pi
   psi <- tmp$psi
   phi <- tmp$phi

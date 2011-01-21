@@ -16,7 +16,7 @@ sens.time<-with(vaccine.trial,
                           time.points=c(2,3), selection="infected",
                           trigger="initiated ART", groupings=c("placebo","vaccine"),
                           empty.principal.stratum=c("not infected","infected"),
-                          N.boot=1000, interval=c(-1000,1000))
+                          N.boot=1000)
                )
 sens.time
 

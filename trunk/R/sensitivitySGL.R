@@ -63,6 +63,7 @@
 
   com <- .calcSGLCoeffCommon(beta, KM0, tau, time.points)
 
+
   coeffs <- mapply(FUN=.calcSGLBetaCoeff,
                    i=com$i, beta=beta, beta.tplus=com$beta.tplus,
                    MoreArgs=list(q.list=com$q.list, q.index=com$q.index,
@@ -160,17 +161,22 @@
     return(c(list(i=i, alphahat=NA),
              .calcSGLInfCoeff(beta, KMAns, RR, n0, N0, n1, N1, doAnalytic)))
   }
-  
-  alphahat <- .calc.alphahat(beta.y=beta.tplus, dF=dF0, C=RR, interval=interval)
+
+  if(RR > 1L) {
+    alphahat <- Inf
+  } else {
+    alphahat <- .calc.alphahat(beta.y=beta.tplus, dF=dF0, C=RR, interval=interval)}
 
   if(all.equal(beta, 0) == TRUE) {
     if(!doAnalytic)
       return(list(i=i, alphahat=alphahat, Fas=KMAns$Fas, FnAs=KMFn0))
     
-    Fas <- KMAns$Fas
+    Fas0 <- KMAns$Fas
     FnAs <- KMFn0
-
-    w <- .calc.w(alpha=alphahat, beta.y=0)
+    if(RR > 1L)
+      w <- rep.int(1L, times=length(tplus))
+    else
+      w <- .calc.w(alpha=alphahat, beta.y=0)
 
     A1 <- -N1*p0*w*(1-w)
     B1 <- 0
@@ -182,17 +188,20 @@
     dg[seq.int(from=0L, along=q.index)*dg.nrow + q.index + 2] <- 1
     dg <- as.data.frame(dg)
   } else {
-    w <- .calc.w(alpha=alphahat, beta.y=beta.tplus)
+    if(RR > 1L)
+      w <- 1
+    else
+      w <- .calc.w(alpha=alphahat, beta.y=beta.tplus)
 
     w.dF0 <- w*dF0
 
-    F0ai <- cumsum(w.dF0)/RR
-    FnAs <- stepfun(x=tplus, y=c(0, F0ai), right=TRUE)
+    Fas <- cumsum(w.dF0)/RR
+    FnAs <- stepfun(x=tplus, y=c(0, Fas), right=TRUE)
     
-    Fas <- ifelse(q.index == 0, 0, F0ai[q.index])
+    Fas0 <- ifelse(q.index == 0, 0, Fas[q.index])
 
     if(!doAnalytic)
-      return(list(i=i, alphahat=alphahat, Fas=Fas, FnAs=FnAs))
+      return(list(i=i, alphahat=alphahat, Fas=Fas0, FnAs=FnAs))
     
     w.1mw.dF0 <- w.dF0*(1-w)
     sum.w.dF0 <- sum(w.dF0)
@@ -204,11 +213,11 @@
 
     dg <- mapply(FUN=.calcSGL.g, q.index=q.index, q.seq=q.list,
                  MoreArgs=list(w, w.dF0, w.1mw.dF0,
-                   sum.w.dF0, sum.w.1mw.dF0, diff.w, F0ai),
+                   sum.w.dF0, sum.w.1mw.dF0, diff.w, Fas),
                  SIMPLIFY=FALSE)
   }
   
-  return(list(i=i, A1=A1, B1=B1, alphahat=alphahat, Fas=Fas, FnAs=FnAs,
+  return(list(i=i, A1=A1, B1=B1, alphahat=alphahat, Fas=Fas0, FnAs=FnAs,
               Fas.var=NULL, dg=dg))
 }
 
@@ -225,8 +234,9 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
   ## d - subject had event
   ## y - time until event ocurred
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
-  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
-                 'analytic' %in% ci.method)
+  withoutCi <- ((!isSlaveMode && !missing(ci.method) && ci.method == "") ||
+                (isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
+                                 'analytic' %in% ci.method)))
 
   if(!isSlaveMode) {
     ## Not running a boot strap mode

@@ -29,6 +29,8 @@ stopifnot(is.numeric(sens.analysis$alphahat0))
 stopifnot(is.numeric(sens.analysis$beta0))
 stopifnot(is.numeric(sens.analysis$alphahat1))
 stopifnot(is.numeric(sens.analysis$beta1))
+stopifnot(with(sens.analysis,
+               Fas0[1, 1](2) - Fas1[1, 1](2) == SCE[1,1,1,1]))
 
 
 set.seed(12345)
