@@ -16,6 +16,9 @@ print.sensitivity.0d <- function(x, ...) {
   print(ACE)
 
   ci.dim <- which(names(dimnames(x$ACE.ci)) == "ci.method")
+  if(length(ci.dim) == 0)
+    return(invisible(NULL))
+
   ci.method <- dimnames(x$ACE.ci)[[ci.dim]]
   ci.slice <- slice.index(x$ACE.ci, ci.dim)
   newdim <- dim(x$ACE.ci)[-ci.dim]
@@ -60,6 +63,9 @@ print.sensitivity.1d <- function(x, ...) {
   print(SCE)
 
   ci.dim <- which(names(dimnames(x$SCE.ci)) == "ci.method")
+  if(length(ci.dim) == 0)
+    return(invisible(NULL))
+  
   ci.method <- dimnames(x$SCE.ci)[[ci.dim]]
   ci.slice <- slice.index(x$SCE.ci, ci.dim)
   newdim <- dim(x$SCE.ci)[-ci.dim]

@@ -19,14 +19,14 @@ sens.time<-with(vaccine.trial,
                           empty.principal.stratum=c("not infected","infected"),
                           N.boot=1000)
                )
-sens.time
-
 stopifnot(is.list(sens.time))
 stopifnot(inherits(sens.time,"sensitivity"))
 stopifnot(inherits(sens.time,"sensitivity.1d"))
 stopifnot(all(c("Fas0", "Fas1", "beta", "alphahat") %in% names(sens.time)))
 stopifnot(is.numeric(sens.time$alphahat))
 stopifnot(is.numeric(sens.time$beta))
+sens.time
+
 
 set.seed(12345)
 sens.time<-with(vaccine.trial.withNA,
@@ -60,5 +60,17 @@ sens.time<-with(vaccine.trial.withNA,
                           trigger="initiated ART", groupings=c("placebo","vaccine"),
                           empty.principal.stratum=c("not infected","infected"),
                           N.boot=100, na.rm=TRUE)
+               )
+sens.time
+
+set.seed(12345)
+sens.time<-with(vaccine.trial,
+                sensitivitySGL(z=treatment, s=hiv.outcome, y=followup.yearsART,
+                          d=ARTinitiation, v=followup.yearsPreART,
+                          beta=c(.25, 0,-.25,-.5), tau=3, followup.time=2.5,
+                          time.points=c(2,3), selection="infected",
+                          trigger="initiated ART", groupings=c("placebo","vaccine"),
+                          empty.principal.stratum=c("not infected","infected"),
+                          ci.method="")
                )
 sens.time

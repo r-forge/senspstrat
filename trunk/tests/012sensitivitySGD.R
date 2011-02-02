@@ -20,8 +20,6 @@ sens.analysis<-with(vaccine.trial,
                           groupings=c("placebo","vaccine"), ci=.95,
                           ci.method="bootstrap", N.boot=1000)
                )
-sens.analysis
-
 stopifnot(is.list(sens.analysis))
 stopifnot(inherits(sens.analysis,"sensitivity"))
 stopifnot(inherits(sens.analysis,"sensitivity.1d"))
@@ -32,6 +30,8 @@ stopifnot(is.numeric(sens.analysis$alphahat1))
 stopifnot(is.numeric(sens.analysis$beta1))
 stopifnot(with(sens.analysis,
                Fas0[1, 1](2) - Fas1[1, 1](2) == SCE[1,1,1,1]))
+sens.analysis
+
 
 
 set.seed(12345)
@@ -73,5 +73,18 @@ sens.analysis<-with(vaccine.trial.withNA,
                           trigger="initiated ART",
                           groupings=c("placebo","vaccine"), ci=.95,
                           ci.method="bootstrap", N.boot=100, na.rm=TRUE)
+               )
+sens.analysis
+
+
+set.seed(12345)
+sens.analysis<-with(vaccine.trial,
+                sensitivitySGD(z=treatment, s=hiv.outcome, y=followup.yearsART,
+                          d=ARTinitiation, beta0=c(0,-.25,-.5),
+                          beta1=c(0, -.25, -.5), phi=c(1), tau=3,
+                          time.points=c(2,3), selection="infected",
+                          trigger="initiated ART",
+                          groupings=c("placebo","vaccine"), ci=.95,
+                          ci.method="")
                )
 sens.analysis

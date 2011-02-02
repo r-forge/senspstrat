@@ -75,20 +75,20 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
                            colsPerFile=1000L, isSlaveMode=FALSE) {
 
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
-  withoutCi <- ((!isSlaveMode && !missing(ci.method) && ci.method == "") ||
+  withoutCi <- ((!missing(ci.method) && ci.method == "") ||
                 (isSlaveMode && !(!missing(ci.method) &&
                                  !is.null(ci.method) &&
-                                 'analytic' %in% ci.method)))
+                                 c('analytic') %in% ci.method)))
 
   doFollowupMethod <- !missing(followup.time) && !is.null(followup.time)
   ## z - group that subject belongs to
   ## s - subject met selection cirteria
   ## d - subject had event
   ## y - time until event ocurred
-  if(withoutCi)
+  if(withoutCdfs)
     ci.method <- NULL
-  else if(isSlaveMode)
-    ci.method <- "analytic"
+  else if(withoutCi)
+    ci.method <- ""
   else
     ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
   
