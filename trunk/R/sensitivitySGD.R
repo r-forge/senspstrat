@@ -334,8 +334,7 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   if(withoutCi) {
     if(isSlaveMode) return(c(list(SCE = SCE), cdfs))
 
-    return(structure(c(list(SCE=SCE), cdfs,
-                       list(ci.probs=ci.probs)),
+    return(structure(c(list(SCE=SCE), cdfs),
                      class=c("sensitivity.1d", "sensitivity"),
                      parameters=list(z0=groupings[1], z1=groupings[2],
                        selected=selection, trigger=trigger)))
