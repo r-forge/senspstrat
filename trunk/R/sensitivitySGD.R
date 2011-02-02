@@ -64,9 +64,9 @@
   return(list(i=beta.tplus$i, alphahat=alphahat, FnAs=FnAs, Fas=Fas))
 }
 
-sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
-                           time.points, 
-                           selection, trigger, groupings,
+sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
+                           time.points, selection, trigger, groupings,
+                           followup.time,
                            ci=0.95, ci.method=c("bootstrap", "analytic"),
                            na.rm=FALSE, N.boot=100L, N.events=NULL,
                            interval=c(-100,100),
@@ -80,6 +80,7 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
                                  !is.null(ci.method) &&
                                  'analytic' %in% ci.method)))
 
+  doFollowupMethod <- !missing(followup.time) && !is.null(followup.time)
   ## z - group that subject belongs to
   ## s - subject met selection cirteria
   ## d - subject had event
@@ -117,12 +118,21 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
     s <- s == selection
 
     if(na.rm == TRUE) {
-      naIndex <- !(is.na(s) | is.na(z) | (s & (is.na(d) | is.na(y))))
+      if(doFollowupMethod) {
+        naIndex <- (is.na(s) | is.na(v) | is.na(z) | (s & (is.na(d) | is.na(y))))
+      } else {
+        naIndex <- (is.na(s) | is.na(z) | (s & (is.na(d) | is.na(y))))
+      }
 
-      z <- z[naIndex]
-      s <- s[naIndex]
-      d <- d[naIndex]
-      y <- y[naIndex]
+      if(any(naIndex)) {
+        z <- z[!naIndex]
+        s <- s[!naIndex]
+        d <- d[!naIndex]
+        y <- y[!naIndex]
+        
+        if(doFollowupMethod)
+          v <- v[!naIndex]
+      }
     }
 
     d <- d == trigger
@@ -130,7 +140,7 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
     z <- z == groupings[2L]
 
   }
-  
+
   ## N  - number subjects
   ## N0 - number of subjects in group 0
   ## N1 - number of subjects in group 1
@@ -138,20 +148,41 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
   N1 <- sum(z)
   N0 <- N-N1
 
-  z0.s1 <- !z & s
-  z1.s1 <- z & s
+  if(doFollowupMethod) {
+    s <- s & v < followup.time
+
+    temp <- with(survfit(Surv(v, s) ~ z, se.fit=FALSE),{
+      who <- n.event > 0L
+      data.frame(strata=rep.int(seq_along(strata), times=strata)[who],
+                 surv=surv[who])
+    })
+
+    
+    p0 <- 1L - tail(x=temp$surv[temp$strata == 1L], n=1L)
+    p1 <- 1L - tail(x=temp$surv[temp$strata == 2L], n=1L)
+  } else {
+    z0.s1 <- !z & s
+    z1.s1 <- z & s
+    
+    ## n0 - number of subjects in group 0 that were selected 
+    ## n1 - number of subjects in group 1 that were selected
+    n0 <- sum(z0.s1)
+    n1 <- sum(z1.s1)
+
+    ## p0 - probiblity that subject in group 0 was selected
+    ## p1 - probablity that subject in group 1 was selected
+    p0 <- n0/N0
+    p1 <- n1/N1
+  }
+
+  if(!isSlaveMode) {
+    ErrMsg <- .CheckPhiPiPsi(phi=phi, Pi=Pi, psi=psi, p0=p0, p1=p1)
+
+    if(length(ErrMsg) > 0)
+      stop(ErrMsg)
+  }
   
-  ## n0 - number of subjects in group 0 that were selected 
-  ## n1 - number of subjects in group 1 that were selected
-  n0 <- sum(z0.s1)
-  n1 <- sum(z1.s1)
-
-  ## p0 - probiblity that subject in group 0 was selected
-  ## p1 - probablity that subject in group 1 was selected
-  p0 <- n0/N0
-  p1 <- n1/N1
-
-  if(all(z0.s1 == FALSE) || all(z1.s1 == FALSE))
+  if(all((!z & s) == FALSE) || all((z & s) == FALSE))
     if(isSlaveMode) {
       return(list(SCE = logical(0)))
     } else {
@@ -159,7 +190,6 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
     }
 
   tmp <- .calcPiPhiPsi(Pi=Pi, phi=phi, psi=psi, p0=p0, p1=p1)
-  str(tmp)
   Pi <- tmp$Pi
   psi <- tmp$psi
   phi <- tmp$phi
@@ -255,7 +285,8 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
   ## iterate across all betas and Pi values
   for(Pi.coeff in coeffs) {
     if(is.character(Pi.coeff) && Pi.coeff[1] == "phi") {
-      SCE.info <- sensitivitySGL(z=z, s=s, d=d, y=y, beta=beta0, tau=tau[1L],
+      SCE.info <- sensitivitySGL(z=z, s=s, d=d, y=y, beta=beta0,
+                                 tau=tau[1L],
                                  time.points=time.points,
                                  selection=selection, trigger=trigger,
                                  groupings=FALSE, ci.method=ci.method,
@@ -355,19 +386,32 @@ sensitivitySGD <- function(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
       mkBsIndex <- .makeBootstrapEvntIndx
     }
 
-    bootCalc <- function(i, z.seq, nVal, beta0, beta1, psi, tau, time.points,
-                         current.fun, verbose) {
-      samp <- mkBsIndex(s, indx.seq=z.seq, N=nVal)
-      ans <- as.vector(current.fun(z=z[samp], s=s[samp], d=d[samp],
-                                   y=y[samp],
-                                   beta0=beta0, beta1=beta1, psi=psi,
-                                   tau=tau, time.points=time.points,
-                                   interval=interval,
-                                   ci.method=NULL, isSlaveMode=TRUE)$SCE)
-      if(verbose) cat(".")
-      return(ans)
+    if(doFollowupMethod) {
+      bootCalc <- function(i, z.seq, nVal, beta0, beta1, psi, tau, time.points,
+                           current.fun, verbose) {
+        samp <- mkBsIndex(s, indx.seq=z.seq, N=nVal)
+        ans <- as.vector(current.fun(z=z[samp], s=s[samp], v=v[samp],
+                                     d=d[samp], y=y[samp],
+                                     beta0=beta0, beta1=beta1, psi=psi,
+                                     tau=tau, followup.time=followup.time,
+                                     time.points=time.points, interval=interval,
+                                     ci.method=NULL, isSlaveMode=TRUE)$SCE)
+        if(verbose) cat(".")
+        return(ans)
+      }
+    } else {
+      bootCalc <- function(i, z.seq, nVal, beta0, beta1, psi, tau, time.points,
+                           current.fun, verbose) {
+        samp <- mkBsIndex(s, indx.seq=z.seq, N=nVal)
+        ans <- as.vector(current.fun(z=z[samp], s=s[samp], d=d[samp], y=y[samp],
+                                     beta0=beta0, beta1=beta1, psi=psi,
+                                     tau=tau, time.points=time.points,
+                                     interval=interval,
+                                     ci.method=NULL, isSlaveMode=TRUE)$SCE)
+        if(verbose) cat(".")
+        return(ans)
+      }
     }
-
     if(inCore) {
       vals <- apply(do.call(rbind, lapply(integer(N.boot), FUN=bootCalc,
                                           z.seq=z.seq, nVal=nVal,

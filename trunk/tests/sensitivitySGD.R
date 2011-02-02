@@ -2,6 +2,7 @@ library(sensitivityPStrat)
 
 data(vaccine.trial)
 
+vaccine.trial$followup.yearsPreART <- runif(2000, 0.5, 3)
 vaccine.trial.withNA <- vaccine.trial
 
 set.seed(12345)
@@ -41,6 +42,21 @@ sens.analysis<-with(vaccine.trial.withNA,
                           time.points=c(2,3), selection="infected",
                           trigger="initiated ART",
                           groupings=c("placebo","vaccine"), ci=.95, na.rm=TRUE,
+                          ci.method="bootstrap", N.boot=1000)
+               )
+sens.analysis
+
+
+set.seed(12345)
+sens.analysis<-with(vaccine.trial,
+                sensitivitySGD(z=treatment, s=hiv.outcome, y=followup.yearsART,
+                          v=followup.yearsPreART, d=ARTinitiation,
+                          beta0=c(0,-.25,-.5),
+                          beta1=c(0, -.25, -.5), phi=c(0.95, 0.90), tau=3,
+                          followup.time=2.5,
+                          time.points=c(2,3), selection="infected",
+                          trigger="initiated ART",
+                          groupings=c("placebo","vaccine"), ci=.95,
                           ci.method="bootstrap", N.boot=1000)
                )
 sens.analysis

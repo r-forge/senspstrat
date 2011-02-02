@@ -10,8 +10,9 @@
   (in press).
 }
 \usage{
-sensitivitySGD(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
+sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
                time.points, selection, trigger, groupings,
+               followup.time,
                ci=0.95, ci.method = c("bootstrap", "analytic"),
                na.rm = FALSE, N.boot = 100L, N.events = NULL,
                interval = c(-100, 100),
@@ -36,6 +37,10 @@ sensitivitySGD(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
     vector; the length of time from selection until event (\code{d}) or
     censoring.
     Can be \code{NA} for unselected records.
+  }
+  \item{v}{
+    numeric vector; the length of time from randomization until
+    selection or censoring.
   }
   \item{beta0}{
     vector; values of the sensitivity parameter linking outcome in group
@@ -71,6 +76,10 @@ sensitivitySGD(z, s, d, y, beta0, beta1, phi, Pi, psi, tau,
     Vector of two elements \code{c(g0,g1)}, the first element \code{g0} being the
     value of \code{z} the delineates the first group, the last element
     \code{g1} being the value of \code{z} which delineates the second group.
+  }
+  \item{followup.time}{
+    numeric value; cut-off point for \code{v} after which records are
+    lost to censoring.
   }
   \item{ci}{
     numeric vector; confidence interval level, defaults to 0.95.
