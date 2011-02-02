@@ -60,3 +60,18 @@ sens.analysis<-with(vaccine.trial,
                           ci.method="bootstrap", N.boot=100)
                )
 sens.analysis
+
+
+set.seed(12345)
+sens.analysis<-with(vaccine.trial.withNA,
+                sensitivitySGD(z=treatment, s=hiv.outcome, y=followup.yearsART,
+                          v=followup.yearsPreART, d=ARTinitiation,
+                          beta0=c(0,-.25,-.5),
+                          beta1=c(0, -.25, -.5), phi=c(0.95, 0.90, 1), tau=3,
+                          followup.time=2.5,
+                          time.points=c(2,3), selection="infected",
+                          trigger="initiated ART",
+                          groupings=c("placebo","vaccine"), ci=.95,
+                          ci.method="bootstrap", N.boot=100, na.rm=TRUE)
+               )
+sens.analysis
