@@ -2,6 +2,7 @@ library(sensitivityPStrat)
 
 data(vaccine.trial)
 
+vaccine.trial$followup.yearsPreART <- runif(nrow(vaccine.trial), 0.5, 3)
 vaccine.trial.withNA <- vaccine.trial
 
 set.seed(12345)
@@ -35,5 +36,17 @@ sens.time<-with(vaccine.trial.withNA,
                           trigger="initiated ART", groupings=c("placebo","vaccine"),
                           empty.principal.stratum=c("not infected","infected"),
                           na.rm=TRUE, N.boot=100)
+               )
+sens.time
+
+set.seed(12345)
+sens.time<-with(vaccine.trial,
+                sensitivitySGL(z=treatment, s=hiv.outcome, y=followup.yearsART,
+                          d=ARTinitiation, v=followup.yearsPreART,
+                          beta=c(.25, 0,-.25,-.5), tau=3, followup.time=2.5,
+                          time.points=c(2,3), selection="infected",
+                          trigger="initiated ART", groupings=c("placebo","vaccine"),
+                          empty.principal.stratum=c("not infected","infected"),
+                          N.boot=100)
                )
 sens.time
