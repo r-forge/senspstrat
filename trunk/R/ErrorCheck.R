@@ -181,7 +181,7 @@
 
     if(!missing(p0) && !missing(p1) && any(Pi > min(p0,p1) | Pi < max(0,p0 + p1 - 1)))
       ErrMsg <- c(ErrMsg, "values of 'Pi' must be constitant with data provided 'Pi > min(p0,p1), Pi < max(0,p0 + p1 - 1)'")
-    else if(Pi > 1 | Pi < 0)
+    else if(any(Pi > 1 | Pi < 0))
       ErrMsg <- c(ErrMsg, "values of 'Pi' between 0 and 1")
   }
 
