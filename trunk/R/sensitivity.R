@@ -116,10 +116,13 @@
                 psi=psi,
                 phi = ifelse(psi == Inf, 1, Pi/p1)))
   } else if(!missing(phi) && !is.null(phi)) {
+    new.phi <- ifelse(phi == 1, NA, phi)
     return(list(sens.var="phi",
                 Pi = p1*phi,
-                psi = log((p1 * phi^2 + (1 - p0 - p1)*phi)/
-                          (p1 * phi^2 - (p1 + p0)* phi + p0)),
+                psi = ifelse(phi == 1,
+                  Inf,
+                  log((p1 * new.phi^2 + (1 - p0 - p1)*new.phi)/
+                      (p1 * new.phi^2 - (p1 + p0)* new.phi + p0))),
                 phi=phi))
   } else {
     return(list(sens.var = "Pi",

@@ -6,9 +6,9 @@
   using the method described by Shepherd, Gilbert, and Lumley (2007).
 }
 \usage{
-sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
-               groupings, empty.principal.stratum, ci=0.95,
-               ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
+sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
+               groupings, empty.principal.stratum, followup.time,
+               ci=0.95, ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
                N.boot = 100L, interval = c(-100, 100),
                oneSidedTest = FALSE, twoSidedTest = TRUE,
                verbose = getOption("verbose"), isSlaveMode = FALSE)
@@ -29,6 +29,10 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
     vector; the length of time from selection until event (\code{d}) or
     censoring.
     Can be \code{NA} for unselected records.
+  }
+  \item{v}{
+    numeric vector; the length of time from randomization until
+    selection or censoring.
   }
   \item{beta}{
     vector; values of the sensitivity parameter.  \code{Inf} and
@@ -59,6 +63,10 @@ sensitivitySGL(z, s, d, y, beta, tau, time.points, selection, trigger,
     S(g0)==s0 and S(g1)==s1 is the empty stratum.  In this example s0
     and s1 refer to the two possible values of s. (Note: method only
     works if s0 != s1).
+  }
+  \item{followup.time}{
+    numeric value; cut-off point for \code{v} after which records are
+    lost to censoring.
   }
   \item{ci}{
     numeric vector; confidence interval level, defaults to 0.95.

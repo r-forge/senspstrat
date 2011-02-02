@@ -6,8 +6,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                            isSlaveMode=FALSE)
 {
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
-  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
-                 'analytic' %in% ci.method)
+  withoutCi <- ((!isSlaveMode && !missing(ci.method) && ci.method == "") ||
+                (isSlaveMode && !(!missing(ci.method) &&
+                                 !is.null(ci.method) &&
+                                 'analytic' %in% ci.method)))
 
   doInfinite <- any(is.infinite(beta))
   doFinite <- any(is.finite(beta))
@@ -55,7 +57,13 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     GroupReverse <- groupings
   }
 
-  ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
+  if(withoutCi)
+    ci.method <- NULL
+  else if(isSlaveMode)
+    ci.method <- "analytic"
+  else
+    ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
+
   n.method <- length(ci.method)
 
   if(any(is.na(z) | is.na(s)))

@@ -39,7 +39,7 @@
                           q.seq.list, r.seq.list, dF0, dF1, dV, dW, VmF0, WmF1,
                           p0, p1, interval) {
   if(phi == 1)
-    return("phi")
+    return(list(i=i,phi="phi"))
   
   beta0.coeff <- lapply(beta.tplus0, q.list=q.seq.list, dF=dF0, Pi..p=Pi..p0,
                         tplus=tplus0, interval=interval, FUN=.calc.beta.coeff)
@@ -87,6 +87,8 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   ## y - time until event ocurred
   if(withoutCi)
     ci.method <- NULL
+  else if(isSlaveMode)
+    ci.method <- "analytic"
   else
     ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
   
@@ -101,11 +103,12 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
                 .CheckTrigger(trigger, d),
                 .CheckTau(tau),
                 .CheckPhiPiPsi(phi=phi, Pi=Pi, psi=psi),
-                .CheckLength(z=z, s=s, d=d, y=y),
+                .CheckLength(z=z, s=s, d=d, y=y, v=v),
                 .CheckZ(z, groupings, na.rm=na.rm),
                 .CheckS(s, na.rm=na.rm),
                 .CheckY(y, s, selection, na.rm=na.rm),
-                .CheckD(d=d, s=s, selection=selection, na.rm=na.rm))
+                .CheckD(d=d, s=s, selection=selection, na.rm=na.rm),
+                .CheckV(v=v, followup.time=followup.time, na.rm=na.rm))
     
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
@@ -284,7 +287,7 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   
   ## iterate across all betas and Pi values
   for(Pi.coeff in coeffs) {
-    if(is.character(Pi.coeff) && Pi.coeff[1] == "phi") {
+    if(is.character(Pi.coeff$phi) && Pi.coeff$phi == "phi") {
       SCE.info <- sensitivitySGL(z=z, s=s, d=d, y=y, beta=beta0,
                                  tau=tau[1L],
                                  time.points=time.points,
@@ -294,12 +297,12 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
 
       if(!withoutCdfs) {
         alphahat0[,Pi.coeff$i] <- SCE.info$alphahat
-        FnAs0[,Pi.coeff$i] <- SCE.info$FnAs0
+        FnAs0[,Pi.coeff$i] <- SCE.info$Fas0
         alphahat1[,Pi.coeff$i] <- NA
-        FnAs1[,Pi.coeff$i] <- SCE.info$FnAs1
+        FnAs1[,Pi.coeff$i] <- SCE.info$Fas1
       }        
-      
-      SCE[,,Pi.coeff$i] <- SCE.info$SCE
+      SCE[,,Pi.coeff$i,] <- SCE.info$SCE[rep.int(seq_along(beta0),
+                                                 times=length(beta1)),]
       next
     }
     for(beta0.coeff in Pi.coeff$beta0.coeff) {
@@ -328,8 +331,15 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
                alphahat1=alphahat1, beta1=beta1, Fas1=FnAs1,
                psi=psi, phi=phi, Pi=Pi, time.points=time.points)
 
-  if(withoutCi)
-    return(c(list(SCE = SCE), cdfs))
+  if(withoutCi) {
+    if(isSlaveMode) return(c(list(SCE = SCE), cdfs))
+
+    return(structure(c(list(SCE=SCE), cdfs,
+                       list(ci.probs=ci.probs)),
+                     class=c("sensitivity.1d", "sensitivity"),
+                     parameters=list(z0=groupings[1], z1=groupings[2],
+                       selected=selection, trigger=trigger)))
+  }
 
   if(!isSlaveMode) {
     if(twoSidedTest) {

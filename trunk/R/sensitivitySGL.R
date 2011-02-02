@@ -221,9 +221,9 @@
               Fas.var=NULL, dg=dg))
 }
 
-sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
+sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
                            selection, trigger, groupings,
-                           empty.principal.stratum,
+                           empty.principal.stratum, followup.time,
                            ci=0.95, ci.method=c("analytic", "bootstrap"),
                            na.rm=FALSE, N.boot=100L, interval=c(-100,100),
                            oneSidedTest=FALSE, twoSidedTest=TRUE,
@@ -238,6 +238,8 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
                 (isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
                                  'analytic' %in% ci.method)))
 
+  doFollowupMethod <- !missing(followup.time) && !is.null(followup.time)
+
   if(!isSlaveMode) {
     ## Not running a boot strap mode
     ## Run error checks on variables.
@@ -246,11 +248,12 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
                 .CheckGroupings(groupings),
                 .CheckTrigger(trigger, d),
                 .CheckTau(tau),
-                .CheckLength(z=z, s=s, y=y),
+                .CheckLength(z=z, s=s, y=y, v=v),
                 .CheckZ(z, groupings, na.rm=na.rm),
                 .CheckS(s, empty.principal.stratum, na.rm=na.rm),
                 .CheckY(y, s, selection, na.rm=na.rm),
-                .CheckD(d=d, s=s, selection=selection, na.rm=na.rm))
+                .CheckD(d=d, s=s, selection=selection, na.rm=na.rm),
+                .CheckV(v=v, followup.time=followup.time, na.rm=na.rm))
 
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
@@ -258,12 +261,21 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
     s <- s == selection
 
     if(na.rm == TRUE) {
-      naIndex <- !(is.na(s) | is.na(z) | (s & (is.na(d) | is.na(y))))
+      if(doFollowupMethod)
+        naIndex <- (is.na(s) | is.na(v) | is.na(z) |
+                    (s & (is.na(d) | is.na(y))))
+      else
+        naIndex <- (is.na(s) | is.na(z) | (s & (is.na(d) | is.na(y))))
 
-      z <- z[naIndex]
-      s <- s[naIndex]
-      d <- d[naIndex]
-      y <- y[naIndex]
+      if(any(naIndex)) {
+        z <- z[!naIndex]
+        s <- s[!naIndex]
+        d <- d[!naIndex]
+        y <- y[!naIndex]
+
+        if(doFollowupMethod)
+          v <- v[!naIndex]
+      }
     }
 
     GroupReverse <- FALSE
@@ -279,6 +291,8 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
 
   if(withoutCi) 
     ci.method <- NULL
+  else if(isSlaveMode)
+    ci.method <- "analytic"
   else
     ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
   
@@ -289,18 +303,47 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
   N1 <- sum(z)
   N0 <- N-N1
 
-  z0.s1 <- !z & s
-  z1.s1 <- z & s
-  
-  ## n0 - number of subjects in group 0 that were selected 
-  ## n1 - number of subjects in group 1 that were selected
-  n0 <- sum(z0.s1)
-  n1 <- sum(z1.s1)
+  if(doFollowupMethod) {
+    s <- s & v < followup.time
 
-  ## p0 - probiblity that subject in group 0 was selected
-  ## p1 - probablity that subject in group 1 was selected
-  p0 <- n0/N0
-  p1 <- n1/N1
+    z0.s1 <- !z & s
+    z1.s1 <- z & s
+
+    temp <- with(survfit(Surv(v, s) ~ z, se.fit=FALSE),{
+      who <- n.event > 0L
+      data.frame(strata=rep.int(seq_along(strata), times=strata)[who],
+                 surv=surv[who])
+    })
+
+    
+    p0 <- 1L - tail(x=temp$surv[temp$strata == 1L], n=1L)
+    p1 <- 1L - tail(x=temp$surv[temp$strata == 2L], n=1L)
+
+    n0 <- p0*N0
+    n1 <- p1*N1
+  } else {    
+    z0.s1 <- !z & s
+    z1.s1 <- z & s
+    
+    ## n0 - number of subjects in group 0 that were selected 
+    ## n1 - number of subjects in group 1 that were selected
+    n0 <- sum(z0.s1)
+    n1 <- sum(z1.s1)
+
+    ## p0 - probiblity that subject in group 0 was selected
+    ## p1 - probablity that subject in group 1 was selected
+    p0 <- n0/N0
+    p1 <- n1/N1
+  }
+
+  if(all(z0.s1 == FALSE) || all(z1.s1 == FALSE) ||
+     all(d[z0.s1] == FALSE) || all(d[z1.s1] == FALSE)) {
+    if(isSlaveMode) {
+      return(list(SCE = logical(0)))
+    } else {
+      stop("No times occured in one or more of the treatment arms")
+    }
+  }
 
   RR <- p1/p0
   VE <- 1L - RR
@@ -331,6 +374,9 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
 
   timePointsOrig <- time.points
   time.points <- unique(sort(time.points))
+
+  tpIndex <- match(time.points, timePointsOrig)
+  betaIndex <- match(beta, betaOrig)
 
   coeffs0 <- .calcSGL.coeff(beta=beta, KMFn0=KMFn0, KM0=KM0, dF0=dF0,
                             p0=p0, n0=n0, N0=N0, n1=n1, N1=N1, tau=tau[1],
@@ -372,8 +418,17 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
   
   cdfs <- list()
   
-  if(withoutCi)
-    return(list(SCE=SCE, alphahat=alphahat, Fas0=FnAs0, Fas1=FnAs1))
+  if(withoutCi) {
+    if(isSlaveMode)
+      return(list(SCE=SCE, alphahat=alphahat, Fas0=FnAs0, Fas1=FnAs1))
+
+      return(structure(list(SCE=SCE[betaIndex,tpIndex,drop=FALSE],
+                            beta=betaOrig, alphahat=alphahat[betaIndex],
+                            Fas0=FnAs0[betaIndex], Fas1=FnAs1),
+                       class=c("sensitivity.1d", "sensitivity"),
+                       parameters=list(z0=groupings[1], z1=groupings[2],
+                         selected=selection, trigger=trigger)))
+  }
   
   if(twoSidedTest) {
     ci.probs <- c(ifelse(ci < 0.5, ci, 0), ifelse(ci < 0.5, 1, ci)) +
@@ -541,9 +596,6 @@ sensitivitySGL <- function(z, s, d, y, beta, tau, time.points,
 
     SCE.ci[,,,'bootstrap'] <- SCE.ci.boot
   }
-
-  tpIndex <- match(time.points, timePointsOrig)
-  betaIndex <- match(beta, betaOrig)
 
   ans <- list(SCE=SCE[betaIndex,tpIndex,drop=FALSE],
               SCE.var=SCE.var[betaIndex, tpIndex, ,drop=FALSE],

@@ -14,7 +14,7 @@ ansJR<-with(vaccine.trial,
           sensitivityJR(z=treatment,s=hiv.outcome,y=logVL,
                     beta0=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
                     beta1=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
-                    phi=c(0.95,0.90,0.80), selection="infected",
+                    phi=c(0.95,0.90,0.80, 1), selection="infected",
                     groupings=c("placebo","vaccine"),
                     N.boot=1000)
          )
@@ -25,46 +25,14 @@ stopifnot(inherits(ansJR,"sensitivity"))
 stopifnot(inherits(ansJR,"sensitivity.0d"))
 stopifnot(inherits(ansJR,"sensitivity.2.0d"))
 
-
-set.seed(12345)
-ansJR<-with(vaccine.trial,
-          sensitivityJR(z=treatment,s=hiv.outcome,y=logVL,
-                        beta0=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
-                        beta1=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
-                        phi=c(0.95,1), selection="infected",
-                        groupings=c("placebo","vaccine"),
-                        ci.method='bootstrap',
-                        N.boot=1000)
-         )
-ansJR
-
-stopifnot(is.list(ansJR))
-stopifnot(inherits(ansJR,"sensitivity"))
-stopifnot(inherits(ansJR,"sensitivity.0d"))
-stopifnot(inherits(ansJR,"sensitivity.2.0d"))
-
-
-set.seed(12345)
-ansJR<-with(vaccine.trial,
-          sensitivityJR(z=treatment,s=hiv.outcome,y=logVL,
-                        beta0=seq(-5,5, length.out=11),
-                        beta1=seq(-5,5, length.out=11),
-                        phi=c(1,0.95,0.90,0.80), selection="infected",
-                        groupings=c("placebo","vaccine"),
-                        ci.method='bootstrap',
-                        N.boot=1000)
-         )
-ansJR
-
-
 set.seed(12345)
 ansJR<-with(vaccine.trial.withNA,
           sensitivityJR(z=treatment,s=hiv.outcome,y=logVL,
                     beta0=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
                     beta1=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
-                    phi=c(0.95,0.90,0.80), selection="infected",
+                    phi=c(0.95,0.90,0.80, 1), selection="infected",
                     groupings=c("placebo","vaccine"), na.rm=TRUE,
-                    N.boot=10)
+                    N.boot=100)
          )
 ansJR
 
@@ -72,3 +40,4 @@ stopifnot(is.list(ansJR))
 stopifnot(inherits(ansJR,"sensitivity"))
 stopifnot(inherits(ansJR,"sensitivity.0d"))
 stopifnot(inherits(ansJR,"sensitivity.2.0d"))
+

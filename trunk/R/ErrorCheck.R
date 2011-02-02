@@ -200,15 +200,19 @@
   return(ErrMsg)
 }
   
-.CheckLength <- function(z, s, d, y) {
+.CheckLength <- function(z, s, d, y, v) {
   ## for vectors z, s, d, and y
   ## 1. must be same length
 
-  vectorMissing <- c(missing(z), missing(s), missing(d), missing(y))
+  vectorLengths <- c(if(!missing(z)) length(z),
+                     if(!missing(s)) length(s),
+                     if(!missing(d)) length(d),
+                     if(!missing(y)) length(y),
+                     if(!missing(v)) length(v))
   
-  if(!any(vectorMissing) &&
-     (length(z) != length(s) || length(z) != length(d) ||
-      length(z) != length(y)))
+  vectorMissing <- c(missing(z), missing(s), missing(d), missing(y), missing(v))
+  
+  if(any(!vectorMissing) && length(unique(vectorLengths)) > 1)
     return(sprintf("Vectors %s are of unequal lengths", paste(c('z','s','d','y')[!vectorMissing], collapse=',')))
 
   return(NULL)
@@ -293,4 +297,21 @@
                 sprintf("argument 'd' cannot contain a NA value if the corresponding 's' is %s", paste(selection, collapse=",")))
 
   return(ErrMsg)
+}
+
+.CheckV <- function(v, followup.time, na.rm) {
+  ## v must be
+  ## 1. present if followup.time is non-NULL or non-missing
+  ## 2. cannot be pressent if followup.time if NULL
+  ## 2. a numeric vector
+  ## 3. cannot contain NA unless na.rm == TRUE
+  if(missing(followup.time) || is.null(followup.time)) {
+    if(!missing(v))
+      return("'v' argument cannot be supplied without a 'followup.time' argument")
+  } else {
+    if(missing(v))
+      return("'followup.time' argument cannot be supplied without a 'v' argument")
+
+  }
+    
 }

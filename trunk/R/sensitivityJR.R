@@ -6,8 +6,10 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                           verbose=getOption("verbose"), isSlaveMode=FALSE)
 {
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
-  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
-                 'analytic' %in% ci.method)
+  withoutCi <- ((!isSlaveMode && !missing(ci.method) && ci.method == "") ||
+                (isSlaveMode && !(!missing(ci.method) &&
+                                 !is.null(ci.method) &&
+                                 'analytic' %in% ci.method)))
 
   calc.coefs <- function(y, beta, dF, RR, interval) {
     coefs <- vector(length(beta), "list")
@@ -63,6 +65,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
 
   if(withoutCi)
     ci.method <- NULL
+  else if(isSlaveMode)
+    ci.method <- "analytic"
   else
     ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
 
@@ -287,7 +291,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     Omega <- matrix(nrow=6,ncol=6)
     for(k in seq_along(Pi)) {
       if(phi[k] == 1) {
-        ACE.var[i, j, k, "analytic"] <- ACE.info$ACE.var
+        ACE.var[,, k, "analytic"] <- ACE.info$ACE.var
       } else for(i in seq_along(beta0)) {
         for(j in seq_along(beta1)) {
           U <- rbind((1-z)*(p0 - s),

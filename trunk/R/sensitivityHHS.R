@@ -100,8 +100,10 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                            twoSidedTest = TRUE, isSlaveMode=FALSE)
 {
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
-  withoutCi <- isSlaveMode && !(!missing(ci.method) && !is.null(ci.method) &&
-                 'analytic' %in% ci.method)
+  withoutCi <- ((!isSlaveMode && !missing(ci.method) && ci.method == "") ||
+                (isSlaveMode && !(!missing(ci.method) &&
+                                 !is.null(ci.method) &&
+                                 'analytic' %in% ci.method)))
   
   if(!isSlaveMode) {
     ## Not running a boot strap mode
@@ -146,10 +148,14 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   bound <- unique(match.arg(bound, several.ok=TRUE))
   boundIndex <- match(bound.orig, bound)
 
-  if(missing(ci.method)) {
+  if(withoutCi)
+    ci.method <- NULL
+  else if(isSlaveMode)
+    ci.method <- "analytic"
+  else if(missing(ci.method) || is.null(ci.method)) {
     ci.method <- 'bootstrap'
   } else {
-    ci.method <- match.arg(ci.method, several.ok=TRUE)
+    ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
   }
 
   UpperIndex <- bound == "upper"
