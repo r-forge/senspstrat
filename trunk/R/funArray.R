@@ -1,48 +1,102 @@
-funArray <- function(data=NA, dim=length(data), dimnames=NULL) {
-  fcall <- match.call()
-
-  fcall[[1]] <- as.name('array')
-  
-  data <- eval.parent(fcall)
-  
-  class(data) <- 'funArray'
-
-  data
+.funVectorFun <- function(...) {
+  lapply(.Data.list, FUN=function(.estimatorFunction, ...) {
+    if(is.null(.estimatorFunction))
+      return(logical())
+    .estimatorFunction(...)
+  })
 }
 
+makeFunVector <- function(data) {
+  x <- .funVectorFun
+
+  envir <- new.env(parent=environment(fun=.funVectorFun))
+  valid <- unlist(lapply(data, FUN=is.function))
+  
+  if(!all(valid)) {
+    stop("some elements from data are not functions")
+  }
+
+  envir$.Data.list <- data
+
+  environment(x) <- envir
+  if(is.array(envir$.Data.list))
+    class(x) <- c('funArray', 'funVector')
+  else
+    class(x) <- 'funVector'
+
+  x
+}  
+
 funVector <- function(length = 0) {
-  x <- vector('list', length)
+  x <- .funVectorFun
+
+  envir <- new.env(parent=environment(fun=.funVectorFun))
+  
+  envir$.Data.list <- lapply(integer(length),
+                             FUN=function(...) function() NULL)
+  environment(x) <- envir
   class(x) <- 'funVector'
 
   x
 }
 
+funMatrix <- function(...) {
+  fcall <- match.call()
+
+  fcall[[1]] <- as.name('matrix')
+
+  makeFunVector(eval.parent(fcall))
+}
+
+funArray <- function(...) {
+  fcall <- match.call()
+
+  fcall[[1]] <- as.name('array')
+
+  makeFunVector(eval.parent(fcall))
+}
+
 '[.funVector' <- function(x, ..., drop=TRUE) {
   cl <- oldClass(x)
-  class(x) <- NULL
+  oldX <- x
+  oldEnv <- environment(oldX)
+  
+  x <- oldEnv$.Data.list
   
   x <- NextMethod(.Generic)
 
   if(length(x) == 1)
     return(x[[1]])
- 
-  class(x) <- cl
-  x
+
+  newEnvir <- new.env(parent=parent.env(oldEnv))
+  
+  newEnvir$.Data.list <- x
+  environment(oldX) <- newEnvir
+  oldX
 }
 
 '[.funArray' <- function(x, ..., drop=TRUE) {
+  oldEnv <- environment(x)
+  oldX <- x
+
+  x <- oldEnv$.Data.list
+  
   y <- NextMethod('[')
 
-  cl <- oldClass(x)
+  cl <- oldClass(oldX)
   
   if(is.array(y))
-    class(y) <- cl
+    class(oldX) <- cl
   else if(length(y) == 1)
     return(y[[1]])
   else
-    class(y) <- ifelse(cl == 'funArray', 'funVector', cl)
-  
-  y
+    class(oldX) <- cl[!'funArray' %in% cl]
+
+  newEnvir <- new.env(parent=parent.env(oldEnv))
+  newEnvir$.Data.list <- y
+  environment(oldX) <- newEnvir
+
+  oldX
 }
 
 ## 'str.funVector' <- function(x, ...) {
@@ -82,31 +136,100 @@ funVector <- function(length = 0) {
   if (!as.logical(length(value)))
     return(x)
 
-  cl <- oldClass(x)
-  if(is.function(value))
+  if(is.list(x)) {
+    valid <- unlist(lapply(value, FUN=is.function))
+  
+    if(!all(valid)) {
+      stop "some elements from value are not assignable to funVectors"
+    }
+  } else if(inherits(value, c('funVector'))) {
+    value <- environment(value)$.Data.list
+  } else if(is.function(value)) {
     value <- list(value)
+  } else {
+    stop("type of value cannot be assigned to a funVector")
+  }
+    
+  oldX <- x
+  oldEnv <- environment(x)
+  
+  x <- oldEnv$.Data.list
   
   class(x) <- class(value) <- NULL
 
   x <- NextMethod(.Generic)
 
-  class(x) <- cl
-  x
+  oldEnv$.Data.list <- x
+
+  oldX
 }
 
 '[<-.funArray' <- function(x, ..., value) {
-  if (!as.logical(length(value)))
+  if (!as.logical(length(value))) {
+    environment(x)$.Data.list <- list()
     return(x)
+  }
+
+  if(is.list(x)) {
+    valid <- unlist(lapply(value, FUN=is.function))
   
+    if(!all(valid)) {
+      stop "some elements from value are not assignable to funVectors"
+    }
+  } else if(inherits(value, c('funVector'))) {
+    value <- environment(value)$.Data.list
+  } else if(is.function(value)) {
+    value <- list(value)
+  } else {
+    stop("type of value cannot be assigned to a funVector")
+  }
+
   cl <- oldClass(x)
+  oldEnv <- environment(x)
+  oldX <- x
+
   if(is.function(value))
     value <- list(value)
+
+  x <- oldEnv$.Data.list
   
   class(x) <- class(value) <- NULL
 
   x <- NextMethod(.Generic)
 
-  class(x) <- cl
-  x
+  oldEnv$.Data.list <- x
+  
+  oldX
 }
 
+c.funVector <- function(..., recursive=FALSE)
+  makeFunVector(c(unlist(lapply(list(...), function(x)
+                                if(inherits(x, 'funVector'))
+                                   environment(x)$.Data.list
+                                else if(is.function(x) || is.list(x))
+                                   x
+                                else 
+                                   function() NULL))))
+
+
+cbind.funVector <- function (..., deparse.level = 1) {
+  dotargs <- list(...)
+
+  newargs <- lapply(dotargs, function(x) if(inherits(x, 'funVector')) environment(x)$.Data.list else x)
+                    
+  names(newargs) <- names(dotargs)
+
+  makeFunVector(do.call('cbind', newargs))
+}
+
+
+rbind.funVector <- function (..., deparse.level = 1) {
+  dotargs <- list(...)
+
+  newargs <- lapply(dotargs, function(x) if(inherits(x, 'funVector')) environment(x)$.Data.list else x)
+
+  names(newargs) <- names(dotargs)
+#  str(do.call('rbind', newargs))
+
+  makeFunVector(do.call('rbind', newargs))
+}
