@@ -1,6 +1,6 @@
 .funVectorFun <- function(...) {
   lapply(.Data.list, FUN=function(.estimatorFunction, ...) {
-    if(is.null(.estimatorFunction))
+    if(is.null(.estimatorFunction) || is.na(.estimatorFunction))
       return(logical())
     .estimatorFunction(...)
   })
@@ -10,7 +10,7 @@ makeFunVector <- function(data) {
   x <- .funVectorFun
 
   envir <- new.env(parent=environment(fun=.funVectorFun))
-  valid <- unlist(lapply(data, FUN=is.function))
+  valid <- unlist(lapply(data, FUN=function(x) is.null(x) || is.function(x) || is.na(x)))
   
   if(!all(valid)) {
     stop("some elements from data are not functions")
@@ -25,7 +25,7 @@ makeFunVector <- function(data) {
     class(x) <- 'funVector'
 
   x
-}  
+}
 
 funVector <- function(length = 0) {
   x <- .funVectorFun
@@ -59,8 +59,8 @@ funArray <- function(...) {
 '[.funVector' <- function(x, ..., drop=TRUE) {
   cl <- oldClass(x)
   oldX <- x
-  oldEnv <- environment(oldX)
-  
+  oldEnv <- environment(x)
+  str(oldEnv)
   x <- oldEnv$.Data.list
   
   x <- NextMethod(.Generic)
@@ -68,6 +68,7 @@ funArray <- function(...) {
   if(length(x) == 1)
     return(x[[1]])
 
+  str(oldEnv)
   newEnvir <- new.env(parent=parent.env(oldEnv))
   
   newEnvir$.Data.list <- x
@@ -76,27 +77,22 @@ funArray <- function(...) {
 }
 
 '[.funArray' <- function(x, ..., drop=TRUE) {
-  oldEnv <- environment(x)
-  oldX <- x
-
-  x <- oldEnv$.Data.list
-  
   y <- NextMethod('[')
 
-  cl <- oldClass(oldX)
+  cl <- oldClass(x)
   
   if(is.array(y))
-    class(oldX) <- cl
-  else if(length(y) == 1)
+    class(x) <- cl
+  else if(length(y) <= 1)
     return(y[[1]])
   else
-    class(oldX) <- cl[!'funArray' %in% cl]
+    class(x) <- cl[!'funArray' %in% cl]
 
   newEnvir <- new.env(parent=parent.env(oldEnv))
   newEnvir$.Data.list <- y
-  environment(oldX) <- newEnvir
+  environment(x) <- newEnvir
 
-  oldX
+  x
 }
 
 ## 'str.funVector' <- function(x, ...) {
@@ -136,11 +132,11 @@ funArray <- function(...) {
   if (!as.logical(length(value)))
     return(x)
 
-  if(is.list(x)) {
+  if(is.list(value)) {
     valid <- unlist(lapply(value, FUN=is.function))
   
     if(!all(valid)) {
-      stop "some elements from value are not assignable to funVectors"
+      stop("some elements from value are not assignable to funVectors")
     }
   } else if(inherits(value, c('funVector'))) {
     value <- environment(value)$.Data.list
@@ -157,7 +153,7 @@ funArray <- function(...) {
   
   class(x) <- class(value) <- NULL
 
-  x <- NextMethod(.Generic)
+  x <- NextMethod(.Generic, x)
 
   oldEnv$.Data.list <- x
 
@@ -165,41 +161,7 @@ funArray <- function(...) {
 }
 
 '[<-.funArray' <- function(x, ..., value) {
-  if (!as.logical(length(value))) {
-    environment(x)$.Data.list <- list()
-    return(x)
-  }
-
-  if(is.list(x)) {
-    valid <- unlist(lapply(value, FUN=is.function))
-  
-    if(!all(valid)) {
-      stop "some elements from value are not assignable to funVectors"
-    }
-  } else if(inherits(value, c('funVector'))) {
-    value <- environment(value)$.Data.list
-  } else if(is.function(value)) {
-    value <- list(value)
-  } else {
-    stop("type of value cannot be assigned to a funVector")
-  }
-
-  cl <- oldClass(x)
-  oldEnv <- environment(x)
-  oldX <- x
-
-  if(is.function(value))
-    value <- list(value)
-
-  x <- oldEnv$.Data.list
-  
-  class(x) <- class(value) <- NULL
-
-  x <- NextMethod(.Generic)
-
-  oldEnv$.Data.list <- x
-  
-  oldX
+  NextMethod('[<-')
 }
 
 c.funVector <- function(..., recursive=FALSE)
