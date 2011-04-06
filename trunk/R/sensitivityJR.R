@@ -199,7 +199,6 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       }
 
       if(!isSlaveMode) {
-        print(is.function(stepfun(y0.uniq, c(0, Fas0))))
         FnAs0[j,i] <- stepfun(y0.uniq, c(0, Fas0))
       }
     }

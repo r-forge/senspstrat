@@ -433,13 +433,13 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
       bootCalc <- function(i, z.seq, nVal, beta0, beta1, psi, tau, time.points,
                            current.fun, custom.FUN, interval, verbose) {
         samp <- mkBsIndex(s, indx.seq=z.seq, N=nVal)
-        ans <- as.vector(current.fun(z=z[samp], s=s[samp], v=v[samp],
-                                     d=d[samp], y=y[samp],
-                                     beta0=beta0, beta1=beta1, psi=psi,
-                                     tau=tau, followup.time=followup.time,
-                                     time.points=time.points, interval=interval,
-                                     ci.method=NULL, custom.FUN=custom.FUN,
-                                     isSlaveMode=TRUE)$SCE)
+        ans <- current.fun(z=z[samp], s=s[samp], v=v[samp],
+                           d=d[samp], y=y[samp],
+                           beta0=beta0, beta1=beta1, psi=psi,
+                           tau=tau, followup.time=followup.time,
+                           time.points=time.points, interval=interval,
+                           ci.method=NULL, custom.FUN=custom.FUN,
+                           isSlaveMode=TRUE)
         if(verbose) cat(".")
         if(!is.null(custom.FUN))
           return(array(c(ans$SCE, ans$result), dim=c(1,length(ans$SCE), 2)))

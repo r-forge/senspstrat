@@ -1,6 +1,6 @@
 .funVectorFun <- function(...) {
   lapply(.Data.list, FUN=function(.estimatorFunction, ...) {
-    if(is.null(.estimatorFunction) || is.na(.estimatorFunction))
+    if(is.null(.estimatorFunction) || (mode(.estimatorFunction) != "closure" && is.na(.estimatorFunction)))
       return(logical())
     .estimatorFunction(...)
   })
@@ -9,6 +9,10 @@
 makeFunVector <- function(data) {
   x <- .funVectorFun
 
+  if(typeof(data) != 'list') {
+    storage.mode(data) <- 'list'
+  }
+  
   envir <- new.env(parent=environment(fun=.funVectorFun))
   valid <- unlist(lapply(data, FUN=function(x) is.null(x) || is.function(x) || is.na(x)))
   
@@ -60,15 +64,14 @@ funArray <- function(...) {
   cl <- oldClass(x)
   oldX <- x
   oldEnv <- environment(x)
-  str(oldEnv)
+
   x <- oldEnv$.Data.list
   
   x <- NextMethod(.Generic)
 
-  if(length(x) == 1)
+  if(length(x) <= 1)
     return(x[[1]])
 
-  str(oldEnv)
   newEnvir <- new.env(parent=parent.env(oldEnv))
   
   newEnvir$.Data.list <- x
@@ -83,12 +86,14 @@ funArray <- function(...) {
   
   if(is.array(y))
     class(x) <- cl
+  else if(is.function(y))
+    return(y)
   else if(length(y) <= 1)
     return(y[[1]])
   else
     class(x) <- cl[!'funArray' %in% cl]
 
-  newEnvir <- new.env(parent=parent.env(oldEnv))
+  newEnvir <- new.env(parent=parent.env(environment(x)))
   newEnvir$.Data.list <- y
   environment(x) <- newEnvir
 
@@ -150,10 +155,8 @@ funArray <- function(...) {
   oldEnv <- environment(x)
   
   x <- oldEnv$.Data.list
-  
-  class(x) <- class(value) <- NULL
 
-  x <- NextMethod(.Generic, x)
+  x <- NextMethod('[<-')
 
   oldEnv$.Data.list <- x
 
@@ -195,3 +198,14 @@ rbind.funVector <- function (..., deparse.level = 1) {
 
   makeFunVector(do.call('rbind', newargs))
 }
+
+names.funVector <- function (x) names(environment(x)$.Data.list)
+
+'names<-.funVector' <- function(x, value) {
+  names(environment(x)$.Data.list) <- value
+  x
+}
+
+dimnames.funVector <- function(x) dimnames(environment(x)$.Data.list)
+
+'dimnames<-.funVector' <- function(x, value) dimnames(environment(x)$.Data.list) <- value

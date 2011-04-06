@@ -410,7 +410,8 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     SCE[coeff0$i,] <- coeff0$Fas - coeff1$Fas
 
     if(!is.null(custom.FUN)) {
-      result[coeff0$i, ] <- custom.FUN(Fas0=coeff0$FnAs, Fas1=coeff1$FnAs, time.points=time.points, p0=p0, p1=p1)
+      str(environment(coeff0$FnAs)$.Data.list)
+      result[coeff0$i, ] <- custom.FUN(Fas0=coeff0$FnAs, Fas1=FnAs1, time.points=time.points, p0=p0, p1=p1)
     }
     
     if(!withoutCdfs) {
@@ -588,15 +589,15 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     bootCalc <- function(i, z.seq, nVal, beta, tau, time.points,
                          current.fun, custom.FUN, verbose) {
       samp <- .makeBootstrapLenIndx(s, indx.seq=z.seq, N=nVal)
-      ans <- as.vector(current.fun(z=z[samp], s=s[samp], d=d[samp],
-                                   y=y[samp],
-                                   beta=beta,
-                                   tau=tau,
-                                   time.points=time.points,
-                                   groupings=GroupReverse, interval=interval,
-                                   custom.FUN=custom.FUN,
-                                   ci.method=NULL,
-                                   isSlaveMode=TRUE)$SCE)
+      ans <- current.fun(z=z[samp], s=s[samp], d=d[samp],
+                         y=y[samp],
+                         beta=beta,
+                         tau=tau,
+                         time.points=time.points,
+                         groupings=GroupReverse, interval=interval,
+                         custom.FUN=custom.FUN,
+                         ci.method=NULL,
+                         isSlaveMode=TRUE)
       if(verbose) cat(".")
 
       if(!is.null(custom.FUN))
@@ -605,7 +606,7 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
         return(array(c(ans$SCE), dim=c(1,length(ans$SCE), 1)))
     }
 
-    rows <- do.call(rbind, lapply(integer(N.boot), FUN=bootCalc,
+    vals <- do.call(rbind, lapply(integer(N.boot), FUN=bootCalc,
                                                 z.seq=z.seq, nVal=N,
                                                 beta=beta,
                                                 tau=tau[1],
@@ -613,14 +614,21 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
                                                 current.fun=current.fun,
                                                 custom.FUN=custom.FUN,
                                                 verbose=verbose))
-    vals <- apply(rows, c(2L, 3L),
+
+    N.bootActual <- nrow(vals)
+
+    if(!is.null(custom.FUN))
+      dim(vals) <- c(nrow(vals), ncol(vals) %/% 2L, 2L)
+    else
+      dim(vals) <- c(nrow(vals), ncol(vals), 1L)
+
+    vals <- apply(vals, c(2L, 3L),
                   FUN=function(x) return(c(var(x), quantile(x, probs=ci.probs))))
     
-    N.bootActual <- nrow(rows)
     if(verbose) cat("\n")
 
     SCE.var.boot = vals[1,,1L,drop=FALSE]
-    SCE.ci.boot = t(vals[-1,,1L,drop=FALSE])
+    SCE.ci.boot = t(array(vals[-1,,1L,drop=FALSE], dim=c(nrow(vals)-1L, ncol(vals))))
     
     if(!is.null(custom.FUN)) {
       result.var.boot <- vals[1L,,2L]

@@ -230,6 +230,7 @@ sens.analysis2<-with(vaccine.trial,
                           },
                           ci.method="bootstrap", N.boot=100)
                )
+sens.analysis2
 
 }
 
