@@ -1,3 +1,5 @@
+.Data.list <- NULL
+
 .funVectorFun <- function(...) {
   lapply(.Data.list, FUN=function(.estimatorFunction, ...) {
     if(is.null(.estimatorFunction) || (mode(.estimatorFunction) != "closure" && is.na(.estimatorFunction)))
@@ -203,9 +205,12 @@ names.funVector <- function (x) names(environment(x)$.Data.list)
 
 'names<-.funVector' <- function(x, value) {
   names(environment(x)$.Data.list) <- value
-  x
+  return(x)
 }
 
 dimnames.funVector <- function(x) dimnames(environment(x)$.Data.list)
 
-'dimnames<-.funVector' <- function(x, value) dimnames(environment(x)$.Data.list) <- value
+'dimnames<-.funVector' <- function(x, value) {
+  dimnames(environment(x)$.Data.list) <- value
+  return(x)
+}

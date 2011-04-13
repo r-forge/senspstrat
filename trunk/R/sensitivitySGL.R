@@ -410,7 +410,6 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     SCE[coeff0$i,] <- coeff0$Fas - coeff1$Fas
 
     if(!is.null(custom.FUN)) {
-      str(environment(coeff0$FnAs)$.Data.list)
       result[coeff0$i, ] <- custom.FUN(Fas0=coeff0$FnAs, Fas1=FnAs1, time.points=time.points, p0=p0, p1=p1)
     }
     
@@ -420,8 +419,10 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     }
   }
 
-  if(withoutCdfs && !is.null(custom.FUN)) return(list(SCE=SCE, result=result))
-  if(withoutCdfs) return(list(SCE=SCE))
+  if(withoutCdfs) {
+    if(!is.null(custom.FUN)) return(list(SCE=SCE, result=result))
+    else return(list(SCE=SCE))
+  }
 
   if(GroupReverse && !isSlaveMode) {
     FnAs1 <- FnAs0
@@ -438,10 +439,10 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
       else
         return(list(SCE=SCE, alphahat=alphahat, Fas0=FnAs0, Fas1=FnAs1))
 
-    return(structure(list(SCE=SCE[betaIndex,tpIndex,drop=FALSE],
-                          beta=betaOrig, alphahat=alphahat[betaIndex],
-                          Fas0=FnAs0[betaIndex], Fas1=FnAs1,
-                          result=if(!is.null(custom.FUN)) result else SCE),
+    return(structure(c(list(SCE=SCE[betaIndex,tpIndex,drop=FALSE],
+                            beta=betaOrig, alphahat=alphahat[betaIndex],
+                            Fas0=FnAs0[betaIndex], Fas1=FnAs1),
+                       if(!is.null(custom.FUN)) list(result=result)),
                      class=c("sensitivity.1d", "sensitivity"),
                      parameters=list(z0=groupings[1], z1=groupings[2],
                        selected=selection, trigger=trigger)))
@@ -643,6 +644,9 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     SCE.ci[,,,'bootstrap'] <- SCE.ci.boot
 
     if(!is.null(custom.FUN)) {
+      str(result.var.boot)
+      str(result.ci.boot)
+      stopifnot(!all(is.na(result.var.boot)))
       dim(result.var.boot) <- SCE.dim
       result.var[,,"bootstrap"] <- result.var.boot
 
@@ -651,12 +655,15 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     }
   }
 
-  ans <- list(SCE=SCE[betaIndex,tpIndex,drop=FALSE],
-              SCE.var=SCE.var[betaIndex, tpIndex, ,drop=FALSE],
-              SCE.ci=SCE.ci[betaIndex, tpIndex,,, drop=FALSE],
-              result=if(!is.null(custom.FUN)) result else SCE,
-              beta=betaOrig, alphahat=alphahat[betaIndex],
-              Fas0=FnAs0[betaIndex], Fas1=FnAs1)
+  ans <- c(list(SCE=SCE[betaIndex,tpIndex,drop=FALSE],
+                SCE.var=SCE.var[betaIndex, tpIndex, ,drop=FALSE],
+                SCE.ci=SCE.ci[betaIndex, tpIndex,,, drop=FALSE]),
+           if(!is.null(custom.FUN))
+              list(result=result,
+                   result.var=result.var,
+                   result.ci=result.ci),
+           list(beta=betaOrig, alphahat=alphahat[betaIndex],
+                Fas0=FnAs0[betaIndex], Fas1=FnAs1))
 
   if(doBootStrapCi) {
     attr(ans, 'N.boot') <- N.boot

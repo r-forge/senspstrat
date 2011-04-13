@@ -8,7 +8,8 @@
 \usage{
 sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
                groupings, empty.principal.stratum, followup.time,
-               ci=0.95, ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
+               ci=0.95, ci.method = c("analytic", "bootstrap"),
+               custom.FUN = NULL, na.rm = FALSE,
                N.boot = 100L, interval = c(-100, 100),
                oneSidedTest = FALSE, twoSidedTest = TRUE,
                verbose = getOption("verbose"), isSlaveMode = FALSE)
@@ -75,6 +76,12 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
     character;  method by which the confidence interval and
     variance are calculated.  Can be \dQuote{analytic} or
     \dQuote{bootstrap}. 
+  }
+  \item{custom.FUN}{
+    function; function to calculate custom result. \code{Fas0}, \code{Fas1},
+    \code{time.points}, \code{p0}, \code{p1} are available to be used as
+    arguments in the custom function.  The custom function must return a
+    vector of elements that is the same length as \code{time.points}.
   }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
