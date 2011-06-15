@@ -1,7 +1,7 @@
 sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                           selection, groupings, ci=0.95,
-                          ci.method=c("analytic", "bootstrap"), na.rm=FALSE,
-                          N.boot=100, interval=c(-100,100),
+                          ci.method=c("analytic", "bootstrap"), custom.FUN=NULL,
+                          na.rm=FALSE, N.boot=100, interval=c(-100,100),
                           oneSidedTest = FALSE, twoSidedTest = TRUE,
                           verbose=getOption("verbose"), isSlaveMode=FALSE)
 {
@@ -10,6 +10,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                 (isSlaveMode && !(!missing(ci.method) &&
                                  !is.null(ci.method) &&
                                  'analytic' %in% ci.method)))
+  UseCustomFun <- !is.null(custom.FUN)
 
   calc.coefs <- function(y, beta, dF, RR, interval) {
     coefs <- vector(length(beta), "list")
@@ -120,6 +121,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
 
   ACE <- array(numeric(ACE.length), dim=ACE.dim, dimnames=ACE.dimnames)
 
+  if(UseCustomFun)
+    result <- array(numeric(ACE.length), dim=ACE.dim, dimnames=ACE.dimnames)
+    
   FnAs0.dim <- ACE.dim[-2L]
   FnAs0.length <- prod(FnAs0.dim)
   FnAs0.dimnames <- ACE.dimnames[-2L]
@@ -149,8 +153,14 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     if(phi[i] == 1) {
       ACE.info <- sensitivityGBH(z=z,s=s,y=y,beta=beta0,
                                  groupings=FALSE,
-                                 ci.method=ci.method, isSlaveMode=TRUE)
+                                 ci.method=ci.method,
+                                 custom.FUN=custom.FUN, isSlaveMode=TRUE)
       
+      if(UseCustomFun) {
+        result[,,i] <- ACE.info$result[rep.int(seq_along(beta0),
+                                                         times=length(beta1)),]
+      }
+
       if(!withoutCdfs) {
         alphahat0[,i] <- ACE.info$alphahat
         FnAs0[,i] <- ACE.info$FnAs0
@@ -166,6 +176,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       ACE[,,i] <- NA
       alphahat0[,i] <- NA
       alphahat1[,i] <- NA
+      result[,,i] <- NA
 
       next
     }
@@ -232,6 +243,12 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       if(!isSlaveMode)
         FnAs1[j,i] <- stepfun(y1.uniq, c(0, Fas1))
     }
+
+    if(UseCustomFun)
+      for(j in seq_along(beta0))
+        for(k in seq_along(beta1))
+          result[j,k,i] <- custom.FUN(Fas0=FnAs0[j,i], Fas1=FnAs1[k,i],
+                                      p0=p0, p1=p1)
 
     ACE[,,i] <- outer(mu0[,i], mu1[,i], function(mu0, mu1) mu1 - mu0)
   }

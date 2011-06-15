@@ -9,9 +9,8 @@
 sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
                groupings, empty.principal.stratum, followup.time,
                ci=0.95, ci.method = c("analytic", "bootstrap"),
-               custom.FUN = NULL, na.rm = FALSE,
+               ci.type="twoSided", custom.FUN = NULL, na.rm = FALSE,
                N.boot = 100L, interval = c(-100, 100),
-               oneSidedTest = FALSE, twoSidedTest = TRUE,
                verbose = getOption("verbose"), isSlaveMode = FALSE)
 }
 \arguments{
@@ -77,6 +76,12 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
     variance are calculated.  Can be \dQuote{analytic} or
     \dQuote{bootstrap}. 
   }
+  \item{ci.type}{
+    character vector; type of confidence interval that the corisponding
+    \code{ci} element is refering to.  Can be \code{"upper"},
+    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    \code{"twoSided"}.
+  }    
   \item{custom.FUN}{
     function; function to calculate custom result. \code{Fas0}, \code{Fas1},
     \code{time.points}, \code{p0}, \code{p1} are available to be used as
@@ -94,14 +99,6 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
     by optimise to estimate alphahat.
-  }
-  \item{oneSidedTest}{
-    logical.  Return a one sided confidence interval for
-    SCE(t). Defaults to \code{FALSE}.
-  }
-  \item{twoSidedTest}{
-    logical.  Return a two sided confidence interval for SCE(t).
-    Defaults to \code{TRUE}.
   }
   \item{verbose}{
     logical;  prints dots when bootstrapping to show that something is happening.
@@ -146,6 +143,10 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
   \item{SCE.var}{
     array; estimated variance of SCE.  Array dimentions the same as
     element \code{SCE}.
+  }
+  \item{ci.map}{
+    list; mapping of confidence interval to quantile probablity.  Use
+    numbers contained within as indecies to the \code{SCE.ci} element.
   }
   \item{beta}{
     vector of user-specified beta values
@@ -216,4 +217,17 @@ sens.time2<-with(vaccine.trial,
                           N.boot=100, interval=c(-200,200))
                )
 sens.time2
+
+sens.time3<-with(vaccine.trial,
+                sensitivitySGL(z=treatment, s=hiv.outcome, y=followup.yearsART,
+                          d=ARTinitiation, beta=c(-Inf,.25,0,-.25,-.5,Inf),
+                          tau=3, time.points=c(2,3), selection="infected",
+                          trigger="initiated ART", groupings=c("placebo","vaccine"),
+                          empty.principal.stratum=c("not infected","infected"),
+                          custom.FUN=function(Fas0,Fas1,time.points,
+                ...) { Fas0(time.points) - Fas1(time.points) },
+                          N.boot=100, interval=c(-200,200))
+               )
+sens.time3
+
 }

@@ -68,9 +68,9 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
                            time.points, selection, trigger, groupings,
                            followup.time,
                            ci=0.95, ci.method=c("bootstrap", "analytic"),
-                           custom.FUN=NULL, na.rm=FALSE, N.boot=100L, N.events=NULL,
-                           interval=c(-100,100),
-                           oneSidedTest=FALSE, twoSidedTest=TRUE,
+                           ci.type="twoSided",
+                           custom.FUN=NULL, na.rm=FALSE, N.boot=100L,
+                           N.events=NULL, interval=c(-100,100),
                            inCore=TRUE, verbose=getOption("verbose"),
                            colsPerFile=1000L, isSlaveMode=FALSE) {
 
@@ -108,7 +108,8 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
                 .CheckS(s, na.rm=na.rm),
                 .CheckY(y, s, selection, na.rm=na.rm),
                 .CheckD(d=d, s=s, selection=selection, na.rm=na.rm),
-                .CheckV(v=v, followup.time=followup.time, na.rm=na.rm))
+                .CheckV(v=v, followup.time=followup.time, na.rm=na.rm),
+                .CheckCi(ci=ci, ci.type=ci.type))
     
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
@@ -116,6 +117,13 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
     ## Process tau
     if(length(tau) == 1) {
       tau <- c(tau, tau)
+    }
+
+    if(missing(ci.type)) {
+      ci.type <- rep('twoSided', length.out=length(ci))
+    } else {
+      ci.type <- match.arg(ci.type, c('upper', 'lower', 'twoSided'),
+                           several.ok=TRUE)
     }
 
     s <- s == selection
@@ -360,20 +368,23 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   }
 
   if(!isSlaveMode) {
-    if(twoSidedTest) {
-      if(ci < 0.5)
-        ci.probs <- c(ci, 1L) - ci/2L
-      else
-        ci.probs <- c(0L, ci) + (1-ci)/2
-    } else {
-      ci.probs <- NULL
+    ci.map <- vector('list', length(ci.type))
+    names(ci.map) <- ci
+
+    for(i in seq_along(ci.type)) {
+      if(ci.type[i] == "upper"){
+        ci.map[[i]] <- ci[i]
+      } else if(ci.type[i] == "lower"){
+        ci.map[[i]] <- 1 - ci[i]
+      }else if(ci.type[i] == "twoSided") {
+        if(ci[i] < 0.5)
+          ci.map[[i]] <- c(ci[i] - ci[i]/2, 1 - ci[i]/2)
+        else
+          ci.map[[i]] <- c((1-ci[i])/2, ci[i] + (1 - ci[i])/2)
+      }
     }
 
-    if(oneSidedTest) {
-      ci.probs <- c(ci.probs, ci)
-    }
-
-    ci.probs <- unique(ci.probs)
+    ci.probs <- unique(unlist(ci.map, recursive=FALSE))
     ci.probsLen <- length(ci.probs)
 
     z.seq <- seq_len(N)
@@ -589,8 +600,9 @@ sensitivitySGD <- function(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
 
   ans <- structure(c(list(SCE=SCE, SCE.ci=SCE.ci, SCE.var=SCE.var),
                      if(!is.null(custom.FUN))
-                        list(result=result, result.ci=result.ci, result.var=result.var),
-                     cdfs, list(ci.probs=ci.probs)),
+                       list(result=result, result.ci=result.ci,
+                            result.var=result.var),
+                     cdfs, list(ci.map=ci.map)),
                    class=c("sensitivity.1d", "sensitivity"),
                    parameters=list(z0=groupings[1], z1=groupings[2],
                      selected=selection, trigger=trigger))

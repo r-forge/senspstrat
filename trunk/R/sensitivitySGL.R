@@ -67,9 +67,9 @@
   coeffs <- mapply(FUN=.calcSGLBetaCoeff,
                    i=com$i, beta=beta, beta.tplus=com$beta.tplus,
                    MoreArgs=list(q.list=com$q.list, q.index=com$q.index,
-                     KMFn0=KMFn0, KMAns=com$KMAns, dF0=dF0, p0=p0, n0=n0, N0=N0,
-                     n1=n1, N1=N1, RR=RR, len.F=length(KM0$t), tplus=com$tplus,
-                     interval=interval, doAnalytic=doAnalytic),
+                     KM0=KM0, KMFn0=KMFn0, KMAns=com$KMAns, dF0=dF0, p0=p0,
+                     n0=n0, N0=N0, n1=n1, N1=N1, RR=RR, len.F=length(KM0$t),
+                     tplus=com$tplus, interval=interval, doAnalytic=doAnalytic),
                    USE.NAMES=FALSE, SIMPLIFY=FALSE)
 
   return(coeffs)
@@ -94,11 +94,11 @@
   return(dg)
 }
 
-.calcSGLPosInfFas <- function(KMAns, RR)
-  pmin(KMAns$Fas/RR, 1L)
+.calcSGLPosInfFas <- function(KM, RR)
+  pmin(KM$Fas/RR, 1L)
 
-.calcSGLNegInfFas <- function(KMAns, RR)
-  pmax((KMAns$Fas - 1L)/RR + 1L, 0)
+.calcSGLNegInfFas <- function(KM, RR)
+  pmax((KM$Fas - 1L)/RR + 1L, 0)
 
 .calcSGLPosInfFasVar <- function(KMAns, RR, n0, N0, n1, N1)
   (KMAns$Fas.var/RR)^2 + (KMAns$Fas/RR)^2*(1L/n0 - 1L/N0 + 1L/n1 - 1L/N1)
@@ -106,20 +106,27 @@
 .calcSGLNegInfFasVar <- function(KMAns, RR, n0, N0, n1, N1)
   (KMAns$Fas.var/RR)^2 + ((1 - KMAns$Fas)/RR)^2*(1/n0 - 1/N0 + 1/n1 - 1/N1)
 
-.calcSGLInfCoeff <- function(beta, KMAns, RR, n0, N0, n1, N1, doAnalytic) {
+.calcSGLInfCoeff <- function(i, q.index, beta, KM0, KMAns, RR, n0, N0, n1, N1,
+                             tplus, doAnalytic) {
 
-  ans <- list()
   if(all.equal(beta, 0) == TRUE) {
-    ans$Fas <- .calcSGLNegInfFas(KMAns, RR)
+    Fas <- .calcSGLNegInfFas(KM0, RR)
     if(doAnalytic)
-      ans$Fas.var <- .calcSGLNegInfFasVar(KMAns, RR, n0, N0, n1, N1)
+      Fas.var <- .calcSGLNegInfFasVar(KMAns, RR, n0, N0, n1, N1)
   } else {
-    ans$Fas <- .calcSGLPosInfFas(KMAns, RR)
+    Fas <- .calcSGLPosInfFas(KM0, RR)
     if(doAnalytic)
-      ans$Fas.var <- .calcSGLPosInfFasVar(KMAns, RR, n0, N0, n1, N1)
+      Fas.var <- .calcSGLPosInfFasVar(KMAns, RR, n0, N0, n1, N1)
   }
 
-  return(ans)
+  FnAs <- stepfun(x=KM0$t, y=c(0, Fas), right=TRUE)
+  Fas <- ifelse(q.index == 0, 0, Fas[q.index])
+  
+  return(if(doAnalytic) {
+    list(i=i, alphahat=NA, Fas=Fas, FnAs=FnAs, Fas.var=Fas.var)
+  } else {
+    list(i=i, alphahat=NA, Fas=Fas, FnAs=FnAs)
+  })
 }
 
 ## .calcSGLInfCoeffBasic <- function(beta, KMAns, RR) {
@@ -155,11 +162,12 @@
 ## }
 
 .calcSGLBetaCoeff <- function(i, beta, beta.tplus, q.list, q.index,
-                                 KMFn0, KMAns, dF0, p0, n0, N0, n1, N1, RR,
+                                 KMFn0, KM0, KMAns, dF0, p0, n0, N0, n1, N1, RR,
                                  tplus, len.F, interval, doAnalytic) {
   if(is.infinite(beta)) {
-    return(c(list(i=i, alphahat=NA),
-             .calcSGLInfCoeff(beta, KMAns, RR, n0, N0, n1, N1, doAnalytic)))
+    return(.calcSGLInfCoeff(i=i, q.index, beta=beta, KM0=KM0, KMAns=KMAns,
+                            RR=RR, n0=n0, N0=N0, n1=n1, N1=N1,
+                            tplus=tplus, doAnalytic=doAnalytic))
   }
 
   if(RR > 1L) {
@@ -167,7 +175,7 @@
   } else {
     alphahat <- .calc.alphahat(beta.y=beta.tplus, dF=dF0, C=RR, interval=interval)}
 
-  if(all.equal(beta, 0) == TRUE) {
+  if(isTRUE(all.equal(beta, 0))) {
     if(!doAnalytic)
       return(list(i=i, alphahat=alphahat, Fas=KMAns$Fas, FnAs=KMFn0))
     
@@ -225,9 +233,9 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
                            selection, trigger, groupings,
                            empty.principal.stratum, followup.time,
                            ci=0.95, ci.method=c("analytic", "bootstrap"),
+                           ci.type="twoSided",
                            custom.FUN=NULL,
                            na.rm=FALSE, N.boot=100L, interval=c(-100,100),
-                           oneSidedTest=FALSE, twoSidedTest=TRUE,
                            verbose=getOption("verbose"), isSlaveMode=FALSE) {
 
   ## z - group that subject belongs to
@@ -254,7 +262,8 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
                 .CheckS(s, empty.principal.stratum, na.rm=na.rm),
                 .CheckY(y, s, selection, na.rm=na.rm),
                 .CheckD(d=d, s=s, selection=selection, na.rm=na.rm),
-                .CheckV(v=v, followup.time=followup.time, na.rm=na.rm))
+                .CheckV(v=v, followup.time=followup.time, na.rm=na.rm),
+                .CheckCi(ci=ci, ci.type=ci.type))
 
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
@@ -277,6 +286,13 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
         if(doFollowupMethod)
           v <- v[!naIndex]
       }
+    }
+
+    if(missing(ci.type)) {
+      ci.type <- rep('twoSided', length.out=length(ci))
+    } else {
+      ci.type <- match.arg(ci.type, c('upper', 'lower', 'twoSided'),
+                           several.ok=TRUE)
     }
 
     GroupReverse <- FALSE
@@ -447,19 +463,23 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
                      parameters=list(z0=groupings[1], z1=groupings[2],
                        selected=selection, trigger=trigger)))
   }
+
+  ci.map <- vector('list', length(ci.type))
+  names(ci.map) <- ci
   
-  if(twoSidedTest) {
-    ci.probs <- c(ifelse(ci < 0.5, ci, 0), ifelse(ci < 0.5, 1, ci)) +
-      rep(ifelse(ci < 0.5, -ci/2, (1-ci)/2), times=length(ci))
-  } else {
-    ci.probs <- NULL
+  for(i in seq_along(ci.type)) {
+    if(ci.type[i] == "upper")
+      ci.map[[i]] <- ci[i]
+    else if(ci.type[i] == "lower")
+      ci.map[[i]] <- 1 - ci[i]
+    else if(ci.type[i] == "twoSided")
+      if(ci[i] < 0.5)
+        ci.map[[i]] <- c(ci[i] - ci[i]/2, 1 - ci[i]/2)
+      else
+        ci.map[[i]] <- c((1-ci[i])/2, ci[i] + (1 - ci[i])/2)
   }
 
-  if(oneSidedTest) {
-    ci.probs <- c(ci.probs, ci)
-  }
-
-  ci.probs <- unique(ci.probs)
+  ci.probs <- unique(unlist(ci.map, recursive=TRUE, use.names=FALSE))
   ci.probsLen <- length(ci.probs)
 
   SCE.ci.dim <- c(SCE.dim, ci.probsLen, length(ci.method))
@@ -644,9 +664,6 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     SCE.ci[,,,'bootstrap'] <- SCE.ci.boot
 
     if(!is.null(custom.FUN)) {
-      str(result.var.boot)
-      str(result.ci.boot)
-      stopifnot(!all(is.na(result.var.boot)))
       dim(result.var.boot) <- SCE.dim
       result.var[,,"bootstrap"] <- result.var.boot
 
@@ -662,7 +679,7 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
               list(result=result,
                    result.var=result.var,
                    result.ci=result.ci),
-           list(beta=betaOrig, alphahat=alphahat[betaIndex],
+           list(ci.map=ci.map, beta=betaOrig, alphahat=alphahat[betaIndex],
                 Fas0=FnAs0[betaIndex], Fas1=FnAs1))
 
   if(doBootStrapCi) {

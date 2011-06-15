@@ -14,13 +14,11 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
                time.points, selection, trigger, groupings,
                followup.time,
                ci=0.95, ci.method = c("bootstrap", "analytic"),
-               custom.FUN = NULL, na.rm = FALSE, N.boot = 100L,
-               N.events = NULL, interval = c(-100, 100),
-               oneSidedTest = FALSE, twoSidedTest = TRUE, inCore = TRUE,
-               verbose = getOption("verbose"), colsPerFile = 1000L,
-               isSlaveMode = FALSE)
+               ci.type="twoSided", custom.FUN = NULL, na.rm = FALSE,
+               N.boot = 100L, N.events = NULL, interval = c(-100, 100),
+               inCore = TRUE,verbose = getOption("verbose"),
+               colsPerFile = 1000L, isSlaveMode = FALSE)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{z}{
     vector; contains the grouping values (e.g., treatment assignment)
@@ -89,6 +87,12 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
     variance are calculated.  Can be \dQuote{analytic} or
     \dQuote{bootstrap}. Currently only works for \dQuote{bootstrap}.
   }
+  \item{ci.type}{
+    character vector; type of confidence interval that the corisponding
+    \code{ci} element is refering to.  Can be \code{"upper"},
+    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    \code{"twoSided"}.
+  }    
   \item{custom.FUN}{
     function; function to calculate custom result. \code{Fas0}, \code{Fas1},
     \code{time.points}, \code{p0}, \code{p1} are available to be used as
@@ -110,14 +114,6 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
     by optimise to estimate alphahat.
-  }
-  \item{oneSidedTest}{
-    logical.  Return a one sided confidence interval for
-    SCE(t). Defaults to \code{FALSE}.
-  }
-  \item{twoSidedTest}{
-    logical.  Return a two sided confidence interval for SCE(t).
-    Defaults to \code{TRUE}.
   }
   \item{verbose}{
     logical;  prints dots when bootstrapping to show that something is happening.
@@ -187,6 +183,10 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   \item{SCE.var}{
     array; estimated variance of SCE.  Array dimensions the same as
     element \code{SCE}.
+  }
+  \item{ci.map}{
+    list; mapping of confidence interval to quantile probablity.  Use
+    numbers contained within as indecies to the \code{SCE.ci} element.
   }
 }
 \references{

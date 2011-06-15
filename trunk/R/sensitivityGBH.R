@@ -85,6 +85,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
   z0.s1 <- !z & s
   z1.s1 <- z & s
+  z.s1 <- z[s]
   
   y0 <- y[z0.s1]
   
@@ -98,7 +99,13 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   p1 <- n1/N1
 
   RR <- min(p1/p0, 1)
+  
+  R.s1 <- rank(y[s])
 
+  Ras0 <- ecdf(R.s1[!z.s1])
+  R0.uniq <- knots(Ras0)
+  dR0 <- diff(c(0, Ras0(R0.uniq)))
+  
   Fas0 <- ecdf(y0)
   y0.uniq <- knots(Fas0)
   dF0 <- diff(c(0, Fas0(y0.uniq)))
@@ -108,13 +115,14 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   dFas1 <- diff(c(0, Fas1(y1.uniq)))
   
   mu1 <- mean(y[z1.s1], na.rm=TRUE)
+  Rmu1 <- mean(R.s1[z.s1])
 
   calc.dFas0AndAlpha <- function(beta, y, dF, C, interval) {
     alphahat <- .calc.alphahat(beta.y=beta*y, dF=dF, C=C, interval=interval)
     
     w <- .calc.w(alpha=alphahat, beta=beta*y)
     
-    return(c(alphahat=alphahat, dF*w/C))
+    return(c(alphahat=alphahat, dFas=dF*w/C))
   }
 
   if(!withoutCdfs)
@@ -126,16 +134,28 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
   ACE <- numeric(ACE.dim)
   names(ACE) <- ACE.dimnames
+  T1 <- numeric(ACE.dim)
+  names(T1) <- ACE.dimnames
+  T2 <- numeric(ACE.dim)
+  names(T2) <- ACE.dimnames
   
   if(doFinite) {
     mu0 <- numeric(length(finiteBeta))
 
-    temp <- sapply(finiteBeta, FUN=calc.dFas0AndAlpha, y=y0.uniq, dF=dF0, C=RR,
-                   interval=interval)
-    
+    temp <- sapply(finiteBeta, FUN=calc.dFas0AndAlpha, y=y0.uniq, dF=dF0,
+                   C=RR, interval=interval)
     alphahat[finiteIndex] <- temp[1,]
-    dFas0 <- temp[-1,, drop=FALSE]
+    dFas0 <- temp[-1,]
 
+    w <- outer(X=y0.uniq, Y=seq_along(finiteBeta), FUN=function(X, Y) {
+      .calc.w(alpha=temp[1,Y], beta=finiteBeta[Y]*X)
+    })
+
+    dRas0 <- dR0*w/RR
+    dRyas0 <- dR0*w
+
+    Rmu0 <- colSums(R0.uniq * dRas0)
+    Rymu0 <- colSums(R0.uniq * dRyas0)
     mu0 <- colSums(y0.uniq * dFas0)
 
     if(!withoutCdfs) {
@@ -145,10 +165,15 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       })
     }
 
-    if(GroupReverse)
+    if(GroupReverse) {
       ACE[finiteIndex] <- mu0 - mu1
-    else
+      T1[finiteIndex] <- Rmu0 - Rmu1
+      T2[finiteIndex] <- Rymu0 - Rmu1
+    } else {
       ACE[finiteIndex] <- mu1 - mu0
+      T1[finiteIndex] <- Rmu1 - Rmu0
+      T2[finiteIndex] <- Rmu1 - Rymu0
+    }
   }
 
   if(doInfinite) {
@@ -342,6 +367,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   ans <- structure(c(list(ACE=ACE[bIndex],
                           ACE.ci=ACE.ci[bIndex,,,drop=FALSE],
                           ACE.var=ACE.var[bIndex,, drop=FALSE],
+                          T1=T1, T2=T2,
                           beta=beta[bIndex], alphahat=alphahat[bIndex]),
                      cdfs),
                    class=c("sensitivity.1.0d", "sensitivity.0d", "sensitivity"),
