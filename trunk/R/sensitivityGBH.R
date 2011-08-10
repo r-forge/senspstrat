@@ -145,7 +145,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     temp <- sapply(finiteBeta, FUN=calc.dFas0AndAlpha, y=y0.uniq, dF=dF0,
                    C=RR, interval=interval)
     alphahat[finiteIndex] <- temp[1,]
-    dFas0 <- temp[-1,]
+    dFas0 <- temp[-1,,drop=FALSE]
 
     w <- outer(X=y0.uniq, Y=seq_along(finiteBeta), FUN=function(X, Y) {
       .calc.w(alpha=temp[1,Y], beta=finiteBeta[Y]*X)
@@ -158,9 +158,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     Rymu0 <- colSums(R0.uniq * dRyas0)
     mu0 <- colSums(y0.uniq * dFas0)
 
-    R2.s1 <- rank(y[s] - ifelse(!z[s], mean(y[z0.s1]) - mu0, 0))
-    R2mu0 <- 1/n0*sum(R2.s1[!z[s]])
-    R2mu1 <- 1/n1*sum(R2.s1[z[s]])
+    R2mu0 <- R2mu1 <- numeric(length(mu0))
+    for(i in seq_along(mu0)) {
+      R2.s1 <- rank(y[s] - ifelse(!z[s], mean(y[z0.s1]) - mu0[i], 0))
+      R2mu0[i] <- 1/n0*sum(R2.s1[!z[s]])
+      R2mu1[i] <- 1/n1*sum(R2.s1[z[s]])
+    }
    
     if(!withoutCdfs) {
       Fas0[finiteIndex] <- lapply(X=as.data.frame(dFas0), FUN=function(x) {
