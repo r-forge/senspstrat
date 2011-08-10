@@ -158,6 +158,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     Rymu0 <- colSums(R0.uniq * dRyas0)
     mu0 <- colSums(y0.uniq * dFas0)
 
+    R2.s1 <- rank(y[s] - ifelse(!z[s], mean(y[z0.s1]) - mu0, 0))
+    R2mu0 <- 1/n0*sum(R2.s1[!z[s]])
+    R2mu1 <- 1/n1*sum(R2.s1[z[s]])
+   
     if(!withoutCdfs) {
       Fas0[finiteIndex] <- lapply(X=as.data.frame(dFas0), FUN=function(x) {
         x <- cumsum(x)
@@ -167,12 +171,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     if(GroupReverse) {
       ACE[finiteIndex] <- mu0 - mu1
-      T1[finiteIndex] <- Rmu0 - Rmu1
-      T2[finiteIndex] <- Rymu0 - Rmu1
+      T1[finiteIndex] <- R2mu0 - R2mu1
+      T2[finiteIndex] <- Rmu0 - Rmu1
     } else {
       ACE[finiteIndex] <- mu1 - mu0
-      T1[finiteIndex] <- Rmu1 - Rmu0
-      T2[finiteIndex] <- Rmu1 - Rymu0
+      T1[finiteIndex] <- R2mu1 - R2mu0
+      T2[finiteIndex] <- Rmu1 - Rmu0
     }
   }
 
@@ -197,7 +201,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   }
 
   if(withoutCdfs) {
-    return(list(ACE=ACE))
+    return(list(ACE=ACE, T1=T1, T2=T2))
   }
   
   if(withoutCi) {
@@ -206,7 +210,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     else
       cdfs <- list(Fas0=Fas0, Fas1=Fas1, alphahat=alphahat)
     
-    return(c(list(ACE=ACE), cdfs))
+    return(c(list(ACE=ACE, T1=T1, T2=T2), cdfs))
   }
 
   if(!isSlaveMode) {
@@ -323,7 +327,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   if(isSlaveMode) {
     cdfs <- list(Fas0=Fas0, Fas1=Fas1, alphahat=alphahat)
 
-    return(c(list(ACE=ACE, ACE.var=ACE.var), cdfs))
+    return(c(list(ACE=ACE, ACE.var=ACE.var, T1=T1, T2=T2), cdfs))
   }
   
   if(any(ci.method == 'bootstrap')) {
