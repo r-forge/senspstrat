@@ -26,36 +26,37 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     vector; indicates whether a record is selected.
   }
   \item{y}{
-    outcome vector.  Can be \code{NA} for
-    unselected records.
+    vector; outcome values.  Can be \code{NA} for unselected records.
   }
   \item{beta0}{
     vector; values of the sensitivity parameter linking outcome in group
-    g0 with selection if assigned group g1.
+    \var{g0} with selection if assigned group \var{g1}.
   }
   \item{beta1}{
     vector; values of the sensitivity parameter linking outcome in group
-    g1 with selection if assigned group g0.
+    \var{g1} with selection if assigned group \var{g0}.
   }
   \item{phi, Pi, psi}{
-    vectors; sensitivity parameters specifying the joint distribution of S(g0),
-    S(g1).  Only one of the three parameters should be
-    specified. \code{psi} is the log-odds ratio of selection.
-    \code{Pi} is the probability of being in the always selected
-    principal stratum (Pr(S(g0)=S(g1)=selected)).
-    \code{phi} is the probability of selection in group g0 given
-    selection in group g1 (Pr(S(g0)=1|S(g1)=1)).
+    vector; sensitivity parameters specifying the joint distribution of
+    \eqn{S(\var{g0})}, \eqn{S(\var{g1})}.  Only one of the three
+    parameters should be specified. \code{psi} is the log-odds ratio of
+    selection. \code{Pi} is the probability of being in the always
+    selected principal stratum (\eqn{Pr(S(\var{g0}) = S(\var{g1}) =
+      selected)}). \code{phi} is the probability of selection in group
+    \var{g0} given selection in group \var{g1}
+    (\eqn{Pr(S(\var{g0}) = 1 | S(\var{g1}) = 1)}).
   }
   \item{selection}{
     The value of \code{s} indicating selection.
   }
   \item{groupings}{
-    Vector of two elements \code{c(g0,g1)}, the first element \code{g0} being the
-    value of \code{z} the delineates the first group, the last element
-    \code{g1} being the value of \code{z} which delineates the second group.
+    vector of two elements \code{c(\var{g0},\var{g1})}; describes to
+    possible group values. The first element \var{g0} being the value of
+    \code{z} the delineates the first group, the last element \var{g1}
+    being the value of \code{z} which delineates the second group.
   }
   \item{ci}{
-    numeric vector;  confidence interval level, defaults to 0.95
+    numeric vector;  confidence interval value. Defaults to \code{0.95}
   }
   \item{ci.method}{
     character;  method by which the confidence interval and
@@ -64,8 +65,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
   }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
-    values should be
-    removed from the data set.
+    values should be removed from the data set.
   }
   \item{N.boot}{
     integer; number of bootstrap repetitions that will be run when
@@ -73,7 +73,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
   }
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
-    by optimise to estimate alphahat.
+    by optimise to estimate alpha.
   }
   \item{oneSidedTest}{
     logical.  Return a one sided confidence interval for ACE. Defaults
@@ -84,59 +84,83 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     to \code{TRUE}
   }
   \item{verbose}{
-    logical;  prints dots when bootstrapping to show that something is happening.
+    logical;  prints dots when bootstrapping to show that something is
+    happening. Bootstrapping can take a long time.
   }
   \item{isSlaveMode}{
     logical.  Internal Use only. Used in recursion.
   }
 }
 \details{
-  
   Performs a sensitivity analysis estimating the average causal effect
   among those who would have been selected regardless of treatment
   assignment (ACE) without assuming monotonicity (i.e., that one of the
-  principal strata is empty).  The method assumes no interference (i.e., potential outcomes of all
-  subjects are unaffected by treatment assignment of other subjects) and
-  ignorable (i.e., random) treatment
-  assignment.  ACE is identified by assuming values for the sensitivity parameters beta0,
-    beta1, and one of the parameters phi, psi, or Pi.  The sensitivity
-    parameters beta0 and beta1 have a log-odds ratio interpretation (see
-    help for sensitivityGBH).  
+  principal strata is empty).  The method assumes no interference (i.e.,
+  potential outcomes of all subjects are unaffected by treatment
+  assignment of other subjects) and ignorable (i.e., random) treatment
+  assignment.  ACE is identified by assuming values for the sensitivity
+  parameters beta0, beta1, and one of the parameters phi, psi, or Pi.
+  The sensitivity parameters \code{beta0} and \code{beta1} have a log-odds ratio
+  interpretation (see help for \code{\link{sensitivityGBH}}).
   
-  Only one of the parameters phi, psi, or Pi should be specified as all
-  depend on each other.  psi is unrestrained taking any value on the real
-  line.  The other parameters, psi and Pi have constraints and there
-  will be estimation problems if these parameters are set at values
-  outside the of their range of acceptable values based on the observed
-  data.  See Shepherd, Gilbert, Dupont (in press) for more details.
-
+  Only one of the parameters \code{phi}, \code{psi}, or \code{Pi} should
+  be specified as all depend on each other.  \code{psi} is unrestrained
+  taking any value on the real line.  The other parameters, \code{psi}
+  and \code{Pi} have constraints and there will be estimation problems
+  if these parameters are set at values outside the of their range of
+  acceptable values based on the observed data.  See Shepherd, Gilbert,
+  Dupont (in press) for more details.
 }
 \value{
   object of class \code{sensitivity3d}
 
   \item{ACE}{
     array; estimated values of ACE for all combinations of \code{beta0},
-    \code{beta1}, and \code{phi/Pi/psi}.  Array dimensions are \code{length(beta0)},
-    \code{length(beta1)}, \code{length(psi)}.
-  }
-  \item{beta0}{
-    beta0 values used.
-  }
-  \item{beta1}{
-    beta1 values used.
-  }
-  \item{phi}{
-    phi values used.
+    \code{beta1}, and \code{phi}, \code{Pi}, \code{psi}.  Array
+    dimensions are \code{length(beta0)}, \code{length(beta1)},
+    \code{length(psi)}.
   }
   \item{ACE.ci}{
-    array; confidence interval determined by \code{quantile} if using
-    \code{ci.method} \dQuote{bootstrap}.  Otherwise calculated using
-    analytic variance with large sample normal approximation.  Array
-    dimensions the same as \code{ACE} element.
+    array; confidence interval determined by \code{\link{quantile}} if
+    \code{ci.method} includes \dQuote{bootstrap}.  Otherwise calculated
+    using analytic variance with large sample normal approximation.
+    Array dimensions the same as \code{ACE} element.
   }
   \item{ACE.var}{
-    array; estimated variance of ACE.   Array dimensions the same as \code{ACE}
+    array; estimated variance of ACE. Array dimensions the same as \code{ACE}
     element.
+  }
+  \item{ACE.p}{
+    vector; estimated p value of ACE.
+  }
+  \item{beta0}{
+    vector; \code{beta0} values used.
+  }
+  \item{alphahat0}{
+    vector; estimated alpha values for the first group.
+  }
+  \item{Fas0}{
+    function; estimator for the distribution function of \var{y0} in
+    the first group in the always selected stratum.
+  }
+  \item{beta1}{
+    vector; \code{beta1} values used.
+  }
+  \item{alphahat1}{
+    vector; estimated alpha values for the second group.
+  }
+  \item{Fas1}{
+    function; estimator for the distribution function of \var{y1} in
+    the second group in the always selected stratum.
+  }
+  \item{phi}{
+    vector; \code{phi} values used.
+  }
+  \item{Pi}{
+    vector; \code{Pi} values used.
+  }
+  \item{psi}{
+    vector; \code{psi} values used.
   }
 }
 \references{
@@ -182,6 +206,4 @@ ansJR<-with(vaccine.trial,
 ansJR
 
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
 

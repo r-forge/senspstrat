@@ -401,6 +401,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     if(verbose) cat("\n")
   }
 
+#  ACE.p <- abs(1 - 2*pnorm(ACE/sqrt(ACE.var)))
+
   return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var),
                      cdfs),
                    class=c("sensitivity.2.0d", "sensitivity.0d", "sensitivity"),
@@ -408,4 +410,3 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                    parameters=list(z0=groupings[1], z1=groupings[2],
                      selected=selection)))
 }
-

@@ -13,7 +13,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
                ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
                N.boot = 100, interval = c(-100, 100),
                oneSidedTest = FALSE, twoSidedTest = TRUE,
-               isSlaveMode=FALSE)
+               method = c("ACE", "T1", "T2"), isSlaveMode=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -25,8 +25,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     vector; indicates whether a record is selected.
   }
   \item{y}{
-    outcome vector.  Can be \code{NA} for
-    unselected records.
+    vector; outcome value. Can be \code{NA} for unselected records.
   }
   \item{beta}{
     vector; values of the sensitivity parameter.  \code{Inf} and
@@ -36,30 +35,31 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     The value of \code{s} indicating selection.
   }
   \item{groupings}{
-    Vector of two elements \code{c(g0,g1)}, the first element \code{g0} being the
-    value of \code{z} the delineates the first group, the last element
-    \code{g1} being the value of \code{z} which delineates the second group.
+    vector of two elements \code{c(\var{g0},\var{g1})}; describes the
+    possible group values. The first element \var{g0} being the value of
+    \code{z} the delineates the first group, the last element \var{g1}
+    being the value of \code{z} which delineates the second group.
   }
   \item{empty.principal.stratum}{
-    vector of two elements \code{c(s0,s1)}; describes the \code{s}
+    vector of two elements \code{c(\var{s0},\var{s1})}; describes the \code{s}
     values that select the empty principal stratum.  If
-    \code{empty.principal.stratum=c(s0,s1)}, then stratum defined by
-    S(g0)==s0 and S(g1)==s1 is the empty stratum.  In this example s0
-    and s1 refer to the two possible values of s. (Note: method only
-    works if s0 != s1).
+    \code{empty.principal.stratum=c(\var{s0},\var{s1})}, then stratum defined by
+    \eqn{S(\var{g0}) = \var{s0}} and \eqn{S(\var{g1}) = \var{s1}} is the empty
+    stratum.  In this example \var{s0} and \var{s1} refer to the two
+    possible values of \code{s}. (Note: method only works if \eqn{\var{s0}
+    \ne \var{s1}}{\var{s0} != \var{s1}}).
   }
   \item{ci}{
-    numeric vector;  confidence interval level, defaults to 0.95
+    numeric vector;  confidence interval level. Defaults to \code{0.95}
   }
   \item{ci.method}{
-    character;  method by which the confidence interval and
-    variance are calculated.  Can be \dQuote{analytic} or
+    character; method by which the confidence interval and variance are
+    calculated.  Can be \dQuote{analytic} or
     \dQuote{bootstrap}. Defaults to \code{c("analytic","bootstrap")}
   }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
-    values should be
-    removed from the data set.
+    values should be removed from the data set.
   }
   \item{N.boot}{
     integer; number of bootstrap repetitions that will be run when
@@ -77,6 +77,13 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     logical.  Return a two sided confidence interval for ACE. Defaults
     to \code{TRUE}
   }
+  \item{method}{
+    character vector; type of test statstics calcualted by
+    function. Can be or more of \dQuote{ACE}, \dQuote{T1}, or
+    \dQuote{T2}. Defaults to \code{"ACE"}.  Methods \dQuote{T1}
+    and \dQuote{T2} are unimplemented if \code{ci.method} includes
+    \dQuote{analytic}.
+  }
   \item{isSlaveMode}{
     logical.  Internal Use only. Used in recursion.
   }
@@ -91,55 +98,98 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   empty).  ACE is identified by assuming a value of the sensitivity
   parameter beta, where exp(beta) has an odds ratio interpretation:
 
-  If empty.principal.stratum=c(S(g0)==not selected, S(g1)==selected) then
-  given selected if assigned g0, the odds of being selected if assigned
-  g1 multiplicatively increase exp(beta) for every 1-unit increase in
-  Y(g0).
+  If \eqn{\code{empty.principal.stratum}=c(S(\var{g0})=\samp{not selected}, S(\var{g1})=\samp{selected})} then
+  given selected if assigned \var{g0}, the odds of being selected if assigned
+  \var{g1} multiplicatively increase \eqn{e^{\beta}}{exp(beta)} for
+  every 1-unit increase in \eqn{Y(\var{g0})}.
+  
+  If \code{empty.principal.stratum}=c(S(\var{g0})==selected, S(\var{g1})==not
+  selected) then given selected if assigned \var{g1}, the odds of being
+  selected if assigned \var{g0} multiplicatively increase
+  \eqn{e^{\beta}}{exp(beta)} for every 1-unit increase in \eqn{Y(\var{g1})}.
 
-  If empty.principal.stratum=c(S(g0)==selected, S(g1)==not
-  selected) then given selected if assigned g1, the odds of being
-  selected if assigned g0 multiplicatively increase exp(beta) for every
-  1-unit increase in Y(g1).
-
-  Specifying beta=\code{-Inf} or
-  beta=\code{Inf} calls \code{\link{sensitivityHHS}}.
-  }
+  Specifying \code{beta}=\code{-Inf} or \code{beta}=\code{Inf} calls
+  \code{\link{sensitivityHHS}}.
+}
 \value{
   an object of class \code{sensitivity2d}.
 
   \item{ACE}{
-    ACE=E(Y(g1)-Y(g0)|S(g1)==S(g0)==selection).  Vector of the estimated ACE values for specified \code{beta} values.
+    vector;
+    \eqn{ACE = E(Y(\var{g1}) - Y(\var{g0})|S(\var{g1}) = S(\var{g0}) = \code{selection})}.
+    Vector of the estimated ACE values for specified \code{beta}
+    values. Only exists if \code{method} includes \dQuote{ACE}.
   }
   \item{ACE.ci}{
-    vector; confidence interval of ACE determined by
+    array; confidence interval of ACE determined by
     quantiles of bootstrap if \code{ci.method} includes
     \dQuote{bootstrap}.  Otherwise calculated using analytic variance
-    with large sample normal approximation.
+    with large sample normal approximation. Only exists if
+    \code{method} includes \dQuote{ACE}.
   }
   \item{ACE.var}{
-    vector; estimated variance of ACE.
+    vector; estimated variance of ACE.  Only exists if
+    \code{method} includes \dQuote{ACE}.
+  }
+  \item{ACE.p}{
+    vector; estimated p value of ACE.  Only exists if
+    \code{method} includes \dQuote{ACE}.
+  }
+  \item{T1}{
+    vector; Vector of the estimated T1 statistic for specified
+    \code{beta} values. Only exists if \code{method} includes
+    \dQuote{T1}.
+  }
+  \item{T1.ci}{
+    array; confidence interval of T1 determined by
+    quantiles of bootstrap if \code{ci.method} includes
+    \dQuote{bootstrap}.  Otherwise calculated using analytic variance
+    with large sample normal approximation. Only exists if
+    \code{method} includes \dQuote{T1}.
+  }
+  \item{T1.var}{
+    vector; estimated variance of T1.  Only exists if
+    \code{method} includes \dQuote{T1}.
+  }
+  \item{T1.p}{
+    vector; estimated p value of T1.  Only exists if
+    \code{method} includes \dQuote{T1}.
+  }
+  \item{T2}{
+    vector; Vector of the estimated T2 statistic for specified
+    \code{beta} values. Only exists if \code{method} includes
+    \dQuote{T2}.
+  }
+  \item{T2.ci}{
+    array; confidence interval of T2 determined by
+    quantiles of bootstrap if \code{ci.method} includes
+    \dQuote{bootstrap}.  Otherwise calculated using analytic variance
+    with large sample normal approximation. Only exists if
+    \code{method} includes \dQuote{T2}.
+  }
+  \item{T2.var}{
+    vector; estimated variance of T2.  Only exists if
+    \code{method} includes \dQuote{T2}.
+  }
+  \item{T2.p}{
+    vector; estimated p value of T2.  Only exists if
+    \code{method} includes \dQuote{T2}.
   }
   \item{beta}{
-    vector of user-specified beta values
+    vector; user-specified \beta values
   }
   \item{alphahat}{
-    vector of estimated values of alpha
-  }
-  \item{y0}{
-    vector of unique \code{y} values in the first group.
+    vector; estimated values of \alpha
   }
   \item{Fas0}{
-    matrix of estimated empirical distribution function values for
-    \code{y0} in the first group in the always selected principal
-    stratum. Pr(Y(g0) <= y0|S(g0)=S(g1)=selection; beta)
-  }
-  \item{y1}{
-    vector of unique \code{y} values in the second group.
+    function; estimator for the empirical distribution function values
+    for \var{y0} in the first group in the always selected principal
+    stratum. Pr(Y(g0) <= y0|S(g0)=S(g1)=\samp{selection}; beta)
   }
   \item{Fas1}{
-    matrix of estimated empirical distribution function values for
-    \code{y1} in the second group in the always selected principal
-    stratum.  Pr(Y(g1) <= y1|S(g0)=S(g1)=selection; beta)
+    function; estimator for the empirical distribution function values
+    for \var{y1} in the second group in the always selected principal
+    stratum.  Pr(Y(g1) <= y1|S(g0)=S(g1)=\samp{selection}; beta)
   }
 }
 \references{
@@ -184,6 +234,4 @@ ans<-with(vaccine.trial,
 ans
 }
 \keyword{design}
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
 

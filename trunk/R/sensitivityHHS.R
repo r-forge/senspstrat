@@ -97,7 +97,8 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                            selection, groupings, empty.principal.stratum,
                            ci=0.95, ci.method=c("bootstrap", "analytic"),
                            na.rm=FALSE, N.boot=100, oneSidedTest = FALSE,
-                           twoSidedTest = TRUE, isSlaveMode=FALSE)
+                           twoSidedTest = TRUE, method=c("ACE", "T1", "T2"),
+                           isSlaveMode=FALSE)
 {
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
   withoutCi <- ((!isSlaveMode && !missing(ci.method) && ci.method == "") ||
@@ -119,6 +120,8 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
 
+    rm(ErrMsg)
+    
     s <- s == selection
 
     if(na.rm == TRUE) {
@@ -158,6 +161,8 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
     ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
   }
 
+  method <- match.bitarg(method)
+
   UpperIndex <- bound == "upper"
   LowerIndex <- bound == "lower"
 
@@ -170,10 +175,22 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   ACE.dim <- length(bound)
   ACE.length <- prod(ACE.dim)
   ACE.dimnames <- bound
+  
+  temp <- numeric(ACE.dim)
+  names(temp) <- ACE.dimnames
 
-  ACE <- numeric(ACE.dim)
-  names(ACE) <- ACE.dimnames
+  if(method["ACE"])
+    ACE <- temp
 
+  if(method["T1"])
+    .FeatureNotYetImplemented("method T1")
+
+  if(method["T2"])
+    .FeatureNotYetImplemented("method T2")
+
+  ## Done with temp
+  rm(temp)
+  
   if(!withoutCdfs) {
     FnAs0 <- funVector(ACE.length)
     names(FnAs0) <- ACE.dimnames
@@ -185,26 +202,34 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   if(DoUpper) {
     UpperObj <- .CalcUpperACEHHS(datObj)
 
-    ACE['upper'] <- UpperObj$ACE
+    if(method["ACE"])
+      ACE['upper'] <- UpperObj$ACE
 
     if(!withoutCdfs) {
-      str(UpperObj$FnAs0)
-      str(FnAs0)
       FnAs0['upper'] <- UpperObj$FnAs0
     }
+
+    ## Done with UpperObj
+    rm(UpperObj)
   }
 
   if(DoLower) {
     LowerObj <- .CalcLowerACEHHS(datObj)
 
-    ACE['lower'] <- LowerObj$ACE
-
+    if(method["ACE"])
+      ACE['lower'] <- LowerObj$ACE
+    
     if(!withoutCdfs)
       FnAs0['lower'] <- LowerObj$FnAs0
+
+    ## Done with LowerObj
+    rm(LowerObj)
   }
 
   if(withoutCdfs)
-    return(list(ACE=ACE))
+    return(c(if(method["ACE"]) list(ACE=ACE),
+             if(method["T1"]) .FeatureNotYetImplemented("method T1"),
+             if(method["T2"]) .FeatureNotYetImplemented("method T2")))
 
   if(!isSlaveMode && GroupReverse) {
     Fas0 <- FnAs1
@@ -215,23 +240,41 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   }
   
   if(withoutCi) {
-    return(list(ACE=ACE, Fas0=Fas0, Fas1=Fas1))
+    return(c(if(method["ACE"]) list(ACE=ACE),
+             if(method["T1"]) .FeatureNotYetImplemented("method T1"),
+             if(method["T2"]) .FeatureNotYetImplemented("method T2"),
+             list(Fas0=Fas0, Fas1=Fas1)))
   }
 
   ACE.var.dim <- c(ACE.dim, length(ci.method))
   ACE.var.length <- prod(ACE.var.dim)
   ACE.var.dimnames <- c(list(bound=ACE.dimnames), list(ci.method=ci.method))
 
-  ACE.var <- array(numeric(ACE.var.length), dim=ACE.var.dim,
-                   dimnames=ACE.var.dimnames)
+  temp <- array(numeric(ACE.var.length), dim=ACE.var.dim,
+                dimnames=ACE.var.dimnames)
 
+  if(method["ACE"])
+    ACE.var <- temp
+
+  if(method["T1"])
+    .FeatureNotYetImplemented("method T1")
+
+  if(method["T2"])
+    .FeatureNotYetImplemented("method T2")
+
+  ## Done with temp
+  rm(temp)
+  
   ## Do analytic method
   if('analytic' %in% ci.method) {
-    stop("Analytic method currently does not exist")
+    .FeatureNotYetImplemented("analytic method")
   }
 
   if(isSlaveMode) {
-    return(list(ACE=ACE, ACE.var=ACE.var, Fas0=Fas0, Fas1=Fas1))
+    return(c(if(method["ACE"]) list(ACE=ACE, ACE.var=ACE.var),
+             if(method["T1"]) .FeatureNotYetImplemented("method T2"),
+             if(method["T2"]) .FeatureNotYetImplemented("method T2"),
+             list(Fas0=Fas0, Fas1=Fas1)))
   }
   
   if(twoSidedTest) {
@@ -259,9 +302,21 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                               as.character(ci.probs*100)),
                             ci.method=ci.method))
 
-  ACE.ci <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
-                  dimnames=ACE.ci.dimnames)
+  temp <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
+                dimnames=ACE.ci.dimnames)
 
+  if(method["ACE"])
+    ACE.ci <- temp
+
+  if(method["T1"])
+    .FeatureNotYetImplemented("method T1")
+
+  if(method["T2"])
+    .FeatureNotYetImplemented("method T2")
+
+  ## Done with temp
+  rm(temp)
+  
   ## run bootstrap method
   if(any(ci.method == 'bootstrap')) {
     bootACECalc <- function(i, z.seq, nVal, z, s, y, bound, GroupReverse,
@@ -274,17 +329,20 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
       return(ans)
     }
     
-    ACE.vals <- apply(do.call(rbind, lapply(integer(N.boot), z.seq=seq_along(z),
-                                            nVal=datObj$N, z=datObj$z,
-                                            s=datObj$s, y=datObj$y, bound=bound,
-                                            GroupReverse=GroupReverse,
-                                            current.fun=sys.function(),
-                                            FUN=bootACECalc)),
-                      2L,
-                      FUN=function(x) c(var(x), quantile(x, probs=ci.probs)))
+    Resp.vals <- apply(do.call(rbind,
+                               lapply(integer(N.boot), z.seq=seq_along(z),
+                                      nVal=datObj$N, z=datObj$z,
+                                      s=datObj$s, y=datObj$y, bound=bound,
+                                      GroupReverse=GroupReverse,
+                                      current.fun=sys.function(),
+                                      FUN=bootACECalc)),
+                       2L,
+                       FUN=function(x) c(var(x), quantile(x, probs=ci.probs)))
 
-    ACE.var[,'bootstrap'] <- ACE.vals[1L,, drop=FALSE]
-    ACE.ci[,,'bootstrap']  <- t(ACE.vals[-1L,, drop=FALSE])
+    if(method["ACE"]) {
+      ACE.var[,'bootstrap'] <- Resp.vals[1L,, drop=FALSE]
+      ACE.ci[,,'bootstrap']  <- t(Resp.vals[-1L,, drop=FALSE])
+    }
   }
 
   
@@ -294,23 +352,30 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
     }
 
 
-    ACE.ci[,,'analytic'] <- outer(seq_along(ACE), qnorm(ci.probs),
-                                  FUN=calculateCi, ACE=ACE,
-                                  sqrt.ACE.var=sqrt(ACE.var[,'analytic']))
+    if(method["ACE"])
+      ACE.ci[,,'analytic'] <- outer(seq_along(ACE), qnorm(ci.probs),
+                                    FUN=calculateCi, ACE=ACE,
+                                    sqrt.ACE.var=sqrt(ACE.var[,'analytic']))
   }
 
-  ans <- structure(list(ACE=ACE[boundIndex],
-                        ACE.ci=ACE.ci[boundIndex,,, drop=FALSE],
-                        ACE.var=ACE.var[boundIndex,, drop=FALSE],
-                        Fas0=Fas0[boundIndex], Fas1=Fas1[boundIndex]),
-                   class=c("sensitivity.0d", "sensitivity"),
-                   parameters=list(z0=groupings[1], z1=groupings[2],
-                     selected=selection, s0=empty.principal.stratum[1],
-                     s1=empty.principal.stratum[2]))
+  if(method["ACE"])
+    ACE.p <- abs(1 - 2*pnorm(ACE/sqrt(ACE.var)))
+
+  ans <-
+    structure(c(if(method["ACE"]) list(ACE=ACE[boundIndex],
+                                       ACE.ci=ACE.ci[boundIndex,,, drop=FALSE],
+                                       ACE.var=ACE.var[boundIndex,, drop=FALSE],
+                                       ACE.p=ACE.p[boundIndex,, drop=FALSE]),
+                if(method["T1"]) .FeatureNotYetImplemented("method T1"),
+                if(method["T2"]) .FeatureNotYetImplemented("method T2"),
+                list(Fas0=Fas0[boundIndex], Fas1=Fas1[boundIndex])),
+              class=c("sensitivity.0d", "sensitivity"),
+              parameters=list(z0=groupings[1], z1=groupings[2],
+                selected=selection, s0=empty.principal.stratum[1],
+                s1=empty.principal.stratum[2]))
 
   if('bootstrap' %in% ci.method)
     attr(ans, 'N.boot') <- N.boot
 
   return(ans)
 }
-
