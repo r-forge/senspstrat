@@ -401,7 +401,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     if(verbose) cat("\n")
   }
 
-#  ACE.p <- abs(1 - 2*pnorm(ACE/sqrt(ACE.var)))
+#  ACE.p <- calc.pvalue(ACE, ACE.var)
 
   return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var),
                      cdfs),

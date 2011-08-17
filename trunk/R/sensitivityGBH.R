@@ -506,13 +506,13 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   }
 
   if(method["ACE"])
-    ACE.p <- abs(1 - 2*pnorm(ACE/sqrt(ACE.var)))
-
+    ACE.p <- calc.pvalue(x=ACE, var=ACE.var)
+  
   if(method["T1"])
-    T1.p <- abs(1 - 2*pnorm(T1/sqrt(T1.var)))
-
+    T1.p <- calc.pvalue(x=T1, var=T1.var)
+  
   if(method["T2"])
-    T2.p <- abs(1 - 2*pnorm(T2/sqrt(T2.var)))
+    T2.p <- calc.pvalue(x=T2, var=T2.var)
 
   if(!isSlaveMode && GroupReverse)
     cdfs <- list(Fas0=Fas1, Fas1=Fas0[bIndex])

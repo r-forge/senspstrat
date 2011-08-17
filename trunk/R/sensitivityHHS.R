@@ -359,7 +359,7 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   }
 
   if(method["ACE"])
-    ACE.p <- abs(1 - 2*pnorm(ACE/sqrt(ACE.var)))
+    ACE.p <- calc.pvalue(x=ACE, var=ACE.var)
 
   ans <-
     structure(c(if(method["ACE"]) list(ACE=ACE[boundIndex],

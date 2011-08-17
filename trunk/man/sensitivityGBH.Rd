@@ -28,7 +28,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     vector; outcome value. Can be \code{NA} for unselected records.
   }
   \item{beta}{
-    vector; values of the sensitivity parameter.  \code{Inf} and
+    vector; values of the \eqn{\beta} sensitivity parameter.  \code{Inf} and
     \code{-Inf} are acceptable.
   }
   \item{selection}{
@@ -50,7 +50,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \ne \var{s1}}{\var{s0} != \var{s1}}).
   }
   \item{ci}{
-    numeric vector;  confidence interval level. Defaults to \code{0.95}
+    numeric vector; confidence interval level. Defaults to \code{0.95}
   }
   \item{ci.method}{
     character; method by which the confidence interval and variance are
@@ -67,7 +67,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   }
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
-    by optimise to estimate alphahat.
+    by optimise to estimate \eqn{\alpha} in for alphahat.
   }
   \item{oneSidedTest}{
     logical.  Return a one sided confidence interval for ACE. Defaults
@@ -96,17 +96,17 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   ignorable (i.e., random) treatment
   assignment, and monotonicity (i.e., one of the principal strata is
   empty).  ACE is identified by assuming a value of the sensitivity
-  parameter beta, where exp(beta) has an odds ratio interpretation:
+  parameter beta, where \eqn{e^{\beta}}{exp(\beta)} has an odds ratio interpretation:
 
   If \eqn{\code{empty.principal.stratum}=c(S(\var{g0})=\samp{not selected}, S(\var{g1})=\samp{selected})} then
   given selected if assigned \var{g0}, the odds of being selected if assigned
-  \var{g1} multiplicatively increase \eqn{e^{\beta}}{exp(beta)} for
+  \var{g1} multiplicatively increase \eqn{e^{\beta}}{exp(\beta)} for
   every 1-unit increase in \eqn{Y(\var{g0})}.
   
   If \code{empty.principal.stratum}=c(S(\var{g0})==selected, S(\var{g1})==not
   selected) then given selected if assigned \var{g1}, the odds of being
   selected if assigned \var{g0} multiplicatively increase
-  \eqn{e^{\beta}}{exp(beta)} for every 1-unit increase in \eqn{Y(\var{g1})}.
+  \eqn{e^{\beta}}{exp(\beta)} for every 1-unit increase in \eqn{Y(\var{g1})}.
 
   Specifying \code{beta}=\code{-Inf} or \code{beta}=\code{Inf} calls
   \code{\link{sensitivityHHS}}.
@@ -136,7 +136,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \code{method} includes \dQuote{ACE}.
   }
   \item{T1}{
-    vector; Vector of the estimated T1 statistic for specified
+    vector; Vector of the estimated T1 test statistic for specified
     \code{beta} values. Only exists if \code{method} includes
     \dQuote{T1}.
   }
@@ -176,10 +176,10 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \code{method} includes \dQuote{T2}.
   }
   \item{beta}{
-    vector; user-specified \beta values
+    vector; user-specified \eqn{\beta} values
   }
   \item{alphahat}{
-    vector; estimated values of \alpha
+    vector; estimated values of \eqn{\alpha}
   }
   \item{Fas0}{
     function; estimator for the empirical distribution function values
