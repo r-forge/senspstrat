@@ -137,11 +137,11 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     resp <- vector(mode="list", length=sum(method) + 2L)
     names(resp) <- c("alphahat", "dFas", names(method)[method])
 
-    temp <- sapply(betas, FUN=calc.alphaAndW, y=y, dF=dF, C=C,
-                   interval=interval)
+    temp <- matrix(sapply(betas, FUN=calc.alphaAndW, y=y, dF=dF, C=C,
+                          interval=interval), ncol=length(betas))
 
     resp$alphahat <- temp[1L,]
-    w <- temp[-1L,]
+    w <- temp[-1L,, drop=FALSE]
 
     # Done with temp
     rm(temp)
@@ -155,12 +155,15 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
         resp$T1 <- Rmu0 - Rmu1
       else
         resp$T1 <- Rmu1 - Rmu0
+
+      ## Done with Rmu0
     }
 
     if(method["T2"]) {
       Y0star <- outer(y, mean(y0) - resp$mu0,
                       FUN=`-`)[rep.int(seq_along(y),
-                                       times=tabulate(match(y0, y))),]
+                                       times=tabulate(match(y0, y))),,
+                               drop=FALSE]
       
       resp$T2 <- sapply(split(Y0star, col(Y0star)),
                         FUN=function(Y0star, Y1star, z) {
@@ -172,6 +175,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                             return(mean(Rstar[z]) - mean(Rstar[!z]))
                         }, Y1star=y1,
                         z=rep.int(c(FALSE,TRUE), times=c(n0,n1)))
+
+      ## Done with Y0star
     }
 
     return(resp)
@@ -216,6 +221,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     if(method["T2"])
       T2[finiteIndex] <- temp$T2
 
+    ## Done with temp
     rm(temp)
     
     if(!withoutCdfs) {
@@ -281,6 +287,35 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
              cdfs))
   }
 
+  ACE.var.dim <- c(ACE.dim, length(ci.method))
+  ACE.var.length <- prod(ACE.var.dim)
+  ACE.var.dimnames <- c(list(ACE.dimnames), list(ci.method=ci.method))
+
+  temp <- array(numeric(ACE.var.length), dim=ACE.var.dim,
+                                       dimnames=ACE.var.dimnames)
+  if(method["ACE"])
+    ACE.var <- temp
+  
+  if(method["T1"])
+    T1.var <- temp
+
+  if(method["T2"])
+    T2.var <- temp
+
+  if(!isSlaveMode) {
+    if(method['ACE'])
+      ACE.p <- temp
+
+    if(method['T1'])
+      T1.p <- temp
+
+    if(method['T2'])
+      T2.p <- temp
+  }
+  
+  ## Done with temp
+  rm(temp)
+  
   if(!isSlaveMode) {
     if(twoSidedTest) {    
       ci.probs <- unlist(lapply(ci, FUN=function(ci) {
@@ -323,24 +358,6 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     rm(temp)
   }
   
-  ACE.var.dim <- c(ACE.dim, length(ci.method))
-  ACE.var.length <- prod(ACE.var.dim)
-  ACE.var.dimnames <- c(list(ACE.dimnames), list(ci.method=ci.method))
-
-  temp <- array(numeric(ACE.var.length), dim=ACE.var.dim,
-                                       dimnames=ACE.var.dimnames)
-  if(method["ACE"])
-    ACE.var <- temp
-  
-  if(method["T1"])
-    T1.var <- temp
-
-  if(method["T2"])
-    T2.var <- temp
-
-  ## Done with temp
-  rm(temp)
-  
   ## run bootstrap method
   if(any(ci.method == 'analytic')) {
     if(method["T1"] || method["T2"])
@@ -348,7 +365,6 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     if(doInfinite) {
       if(method["ACE"]) {
-        ACE.ci[infiniteIndex,,'analytic'] <- infiniteACE.info$ACE.ci[,,'analytic']
         ACE.var[infiniteIndex,'analytic'] <- infiniteACE.info$ACE.var[,'analytic']
       }
     }
@@ -412,20 +428,26 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
         
         ## Done with Omega
         rm(Omega)
-        
-        if(!isSlaveMode) {
-          calculateCi <- function(i, norm, ACE, sqrt.ACE.var) {
-            ACE[i] + norm * sqrt.ACE.var[i]
-          }
-
-          ACE.ci[finiteIndex,, 'analytic'] <-
-            outer(seq_along(finiteIndex), qnorm(ci.probs),
-                  FUN=calculateCi, ACE=ACE,
-                  sqrt.ACE.var=sqrt(ACE.var[finiteIndex, 'analytic']))
+      }
+    }
+    
+    if(!isSlaveMode) {
+      if(method["ACE"]) {
+        calculateCi <- function(i, norm, ACE, sqrt.ACE.var) {
+          ACE[i] + norm * sqrt.ACE.var[i]
         }
+
+        ACE.ci[,, 'analytic'] <-
+          outer(seq_along(ACE), qnorm(ci.probs),
+                FUN=calculateCi, ACE=ACE,
+                sqrt.ACE.var=sqrt(ACE.var[, 'analytic']))
+
+        ACE.p[,'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,'analytic'])
       }
     }
   }
+
+  ## Done with infiniteACE.info
 
   if(isSlaveMode) {
     cdfs <- list(Fas0=Fas0, Fas1=Fas1, alphahat=alphahat)
@@ -452,7 +474,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
         temp <- sensitivityHHS(z=new.z, s=new.s, y=new.y,
                                bound=bounds,
                                groupings=GroupReverse,
-                               ci.method=NULL,
+                               ci.method=NULL, method=names.method,
                                isSlaveMode=TRUE)[names.method]
         for(i in names.method) {
           Resp.vals[infiniteIndex,i] <- temp[[i]]
@@ -477,42 +499,42 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     method.grid <- expand.grid(beta=beta, method=names.method)
     ans <- sapply(split(Resp.list, rep.int(interaction(method.grid),
                                            times=N.boot)),
-                  function(Resp.vals, probs) c(var(Resp.vals),
-                                              quantile(Resp.vals, probs=probs)),
-                  probs=ci.probs)
-    ans.ci <- t(ans[-1,])
+                  function(Resp.vals, probs)
+                    c(var(Resp.vals),
+                      mean(Resp.vals > 0),
+                      quantile(Resp.vals, probs=probs)),
+                    probs=ci.probs)
+    ans.ci <- t(ans[c(-1,-2),])
     ans.var <- ans[1,]
+    ans.p <- 2 * ifelse(ans[2,] > 0.5, 1 - ans[2,], ans[2,])
 
     ## Done with ans cleanup
     rm(ans)
 
     if(method["ACE"]) {
-      ACE.ci[,,'bootstrap'] <- ans.ci[method.grid$method == "ACE",]
-      ACE.var[,'bootstrap'] <- ans.var[method.grid$method == "ACE"]
+      method.index <- method.grid$method == "ACE"
+      ACE.ci[,,'bootstrap'] <- ans.ci[method.index,]
+      ACE.var[,'bootstrap'] <- ans.var[method.index]
+      ACE.p[,'bootstrap'] <- ans.p[method.index]
     }
 
     if(method["T1"]) {
-      T1.ci[,,'bootstrap'] <- ans.ci[method.grid$method == "T1",]
-      T1.var[,'bootstrap'] <- ans.var[method.grid$method == "T1"]
+      method.index <- method.grid$method == "T1"
+      T1.ci[,,'bootstrap'] <- ans.ci[method.index,]
+      T1.var[,'bootstrap'] <- ans.var[method.index]
+      T1.p[,'bootstrap'] <- ans.p[method.index]
     }
 
     if(method["T2"]) {
-      T2.ci[,,'bootstrap'] <- ans.ci[method.grid$method == "T2",]
-      T2.var[,'bootstrap'] <- ans.var[method.grid$method == "T2"]
+      method.index <- method.grid$method == "T2"
+      T2.ci[,,'bootstrap'] <- ans.ci[method.index,]
+      T2.var[,'bootstrap'] <- ans.var[method.index]
+      T2.p[,'bootstrap'] <- ans.p[method.index]
     }
 
     ## clean up ans.ci ans.var, and method.grid not used again
     rm(ans.ci, ans.var, method.grid)
   }
-
-  if(method["ACE"])
-    ACE.p <- calc.pvalue(x=ACE, var=ACE.var)
-  
-  if(method["T1"])
-    T1.p <- calc.pvalue(x=T1, var=T1.var)
-  
-  if(method["T2"])
-    T2.p <- calc.pvalue(x=T2, var=T2.var)
 
   if(!isSlaveMode && GroupReverse)
     cdfs <- list(Fas0=Fas1, Fas1=Fas0[bIndex])
