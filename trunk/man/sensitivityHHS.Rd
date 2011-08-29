@@ -10,8 +10,9 @@
 \usage{
 sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
                groupings, empty.principal.stratum, ci = 0.95,
-               ci.method = c("bootstrap", "analytic"), na.rm = FALSE,
-               N.boot = 100, oneSidedTest = FALSE, twoSidedTest = TRUE,
+               ci.method = c("bootstrap", "analytic"),
+               ci.type = "twoSided", na.rm = FALSE, N.boot = 100,
+               upperTest = FALSE, lowerTest = FALSE, twoSidedTest = TRUE,
                method = c("ACE", "T1", "T2"), isSlaveMode=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -58,6 +59,12 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
     \dQuote{bootstrap}. Defaults to \code{c("analytic","bootstrap")}.
     Currently only works for \dQuote{bootstrap}.
   }
+  \item{ci.type}{
+    character vector; type of confidence interval that the corisponding
+    \code{ci} element is refering to.  Can be \code{"upper"},
+    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    \code{"twoSided"}.
+  }    
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
     values should be removed from the data set.
@@ -66,12 +73,16 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
     integer. Number of bootstrap repetitions that will be run when
     \code{ci.method} includes \dQuote{bootstrap}.
   }
-  \item{oneSidedTest}{
-    logical.  Return a one sided confidence interval for ACE. Defaults
+  \item{lowerTest}{
+    logical.  Return the lower one sided p value for returned tests. Defaults
+    to \code{FALSE}
+  }
+  \item{upperTest}{
+    logical.  Return the upper one sided p value for returned tests. Defaults
     to \code{FALSE}
   }
   \item{twoSidedTest}{
-    logical.  Return a two sided confidence interval for ACE. Defaults
+    logical.  Return a two sided p value for returned tests. Defaults
     to \code{TRUE}
   }
   \item{method}{
