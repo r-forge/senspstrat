@@ -10,9 +10,10 @@
 \usage{
 sensitivityGBH(z, s, y, beta, selection, groupings,
                empty.principal.stratum, ci = 0.95,
-               ci.method = c("analytic", "bootstrap"), na.rm = FALSE,
+               ci.method = c("analytic", "bootstrap"),
+               ci.type = "twoSided", na.rm = FALSE,
                N.boot = 100, interval = c(-100, 100),
-               oneSidedTest = FALSE, twoSidedTest = TRUE,
+               upperTest = FALSE, lowerTest = FALSE, twoSidedTest = TRUE,
                method = c("ACE", "T1", "T2"), isSlaveMode=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -57,6 +58,12 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     calculated.  Can be \dQuote{analytic} or
     \dQuote{bootstrap}. Defaults to \code{c("analytic","bootstrap")}
   }
+  \item{ci.type}{
+    character vector; type of confidence interval that the corisponding
+    \code{ci} element is refering to.  Can be \code{"upper"},
+    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    \code{"twoSided"}.
+  }    
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
     values should be removed from the data set.
@@ -69,12 +76,16 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     numeric vector of length 2. Controls the range limits used to
     by optimise to estimate \eqn{\alpha} in for alphahat.
   }
-  \item{oneSidedTest}{
-    logical.  Return a one sided confidence interval for ACE. Defaults
+  \item{lowerTest}{
+    logical.  Return the lower one sided p value for returned tests. Defaults
+    to \code{FALSE}
+  }
+  \item{upperTest}{
+    logical.  Return the upper one sided p value for returned tests. Defaults
     to \code{FALSE}
   }
   \item{twoSidedTest}{
-    logical.  Return a two sided confidence interval for ACE. Defaults
+    logical.  Return a two sided p value for returned tests. Defaults
     to \code{TRUE}
   }
   \item{method}{

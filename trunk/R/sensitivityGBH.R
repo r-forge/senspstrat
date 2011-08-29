@@ -1,8 +1,9 @@
 sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                            empty.principal.stratum, ci=0.95,
-                           ci.method=c("analytic", "bootstrap"), na.rm=FALSE, 
+                           ci.method=c("analytic", "bootstrap"),
+                           ci.type="twoSided", na.rm=FALSE, 
                            N.boot=100, interval=c(-100,100),
-                           oneSidedTest = FALSE, twoSidedTest = TRUE,
+                           upperTest=FALSE, lowerTest=FALSE, twoSidedTest=TRUE,
                            method=c("ACE", "T1", "T2"),
                            isSlaveMode=FALSE)
 {
@@ -33,7 +34,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                 .CheckLength(z=z, s=s, y=y),
                 .CheckZ(z, groupings, na.rm=na.rm),
                 .CheckS(s, empty.principal.stratum, na.rm=na.rm),
-                .CheckY(y, s, selection, na.rm=na.rm))
+                .CheckY(y, s, selection, na.rm=na.rm),
+                .CheckCi(ci=ci, ci.type=ci.type))
 
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
@@ -49,6 +51,13 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       y <- y[naIndex]
     }
     
+    if(missing(ci.type)) {
+      ci.type <- rep('twoSided', length.out=length(ci))
+    } else {
+      ci.type <- match.arg(ci.type, c('upper', 'lower', 'twoSided'),
+                           several.ok=TRUE)
+    }
+
     GroupReverse <- FALSE
     if(empty.principal.stratum[1] == selection) {
       z <- z == groupings[1]
@@ -317,22 +326,22 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   rm(temp)
   
   if(!isSlaveMode) {
-    if(twoSidedTest) {    
-      ci.probs <- unlist(lapply(ci, FUN=function(ci) {
-        if(ci < 0.5)
-          c(ci, 1L) - ci/2L
+    ci.map <- vector('list', length(ci.type))
+    names(ci.map) <- ci
+  
+    for(i in seq_along(ci.type)) {
+      if(ci.type[i] == "upper")
+        ci.map[[i]] <- ci[i]
+      else if(ci.type[i] == "lower")
+        ci.map[[i]] <- 1 - ci[i]
+      else if(ci.type[i] == "twoSided")
+        if(ci[i] < 0.5)
+          ci.map[[i]] <- c(ci[i] - ci[i]/2, 1 - ci[i]/2)
         else
-          c(0L, ci) + (1-ci)/2
-      }))
-    } else {
-      ci.probs <- NULL
+          ci.map[[i]] <- c((1-ci[i])/2, ci[i] + (1 - ci[i])/2)
     }
 
-    if(oneSidedTest) {
-      ci.probs <- c(ci.probs, ci)
-    }
-
-    ci.probs <- unique(sort(ci.probs))
+    ci.probs <- sort(unique(unlist(ci.map, recursive=TRUE, use.names=FALSE)))
     ci.probsLen <- length(ci.probs)
 
     ACE.ci.dim <- c(ACE.dim, ci.probsLen, length(ci.method))
@@ -551,7 +560,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                      if(method["T2"]) list(T2=T2[bIndex],
                                            T2.ci=T2.ci[bIndex,,, drop=FALSE],
                                            T2.p=T2.p[bIndex,, drop=FALSE]),
-                     list(beta=beta[bIndex], alphahat=alphahat[bIndex]),
+                     list(ci.map=ci.map, beta=beta[bIndex],
+                          alphahat=alphahat[bIndex]),
                      cdfs),
                    class=c("sensitivity.1.0d", "sensitivity.0d", "sensitivity"),
                    parameters=list(z0=groupings[1], z1=groupings[2],
