@@ -295,11 +295,11 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                                        dimnames=ACE.var.dimnames)
   if(method["ACE"])
     ACE.var <- temp
-  
-  if(method["T1"])
+
+  if(method['T1'])
     T1.var <- temp
 
-  if(method["T2"])
+  if(method['T2'])
     T2.var <- temp
 
   if(!isSlaveMode) {
@@ -457,6 +457,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
              if(method["T2"]) list(T2=T2, T2.var=T2.var),
              cdfs))
   }
+
+  # Done with T1.var, and T2.var if created
   
   if(any(ci.method == 'bootstrap')) {
     index <- seq_len(N)
@@ -466,7 +468,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       dim(Resp.vals) <- c(length(beta), n.method)
       dimnames(Resp.vals) <- list(beta, names.method)
       
-      new.index <- sample(index, N, replace=TRUE)
+      new.index <- sample(N, replace=TRUE)
       new.z <- z[new.index]
       new.s <- s[new.index]
       new.y <- y[new.index]
@@ -508,8 +510,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     ans.var <- ans[1,]
     ans.p <- 2 * ifelse(ans[2,] > 0.5, 1 - ans[2,], ans[2,])
 
-    ## Done with ans cleanup
-    rm(ans)
+    ## Done with ans, Resp.list
+    rm(ans, Resp.list)
 
     if(method["ACE"]) {
       method.index <- method.grid$method == "ACE"
@@ -521,14 +523,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     if(method["T1"]) {
       method.index <- method.grid$method == "T1"
       T1.ci[,,'bootstrap'] <- ans.ci[method.index,]
-      T1.var[,'bootstrap'] <- ans.var[method.index]
       T1.p[,'bootstrap'] <- ans.p[method.index]
     }
 
     if(method["T2"]) {
       method.index <- method.grid$method == "T2"
       T2.ci[,,'bootstrap'] <- ans.ci[method.index,]
-      T2.var[,'bootstrap'] <- ans.var[method.index]
       T2.p[,'bootstrap'] <- ans.p[method.index]
     }
 
@@ -547,11 +547,9 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                                             ACE.p=ACE.p[bIndex,, drop=FALSE]),
                      if(method["T1"]) list(T1=T1[bIndex],
                                            T1.ci=T1.ci[bIndex,,, drop=FALSE],
-                                           T1.var=T1.var[bIndex,, drop=FALSE],
                                            T1.p=T1.p[bIndex,, drop=FALSE]),
                      if(method["T2"]) list(T2=T2[bIndex],
                                            T2.ci=T2.ci[bIndex,,, drop=FALSE],
-                                           T2.var=T2.var[bIndex,, drop=FALSE],
                                            T2.p=T2.p[bIndex,, drop=FALSE]),
                      list(beta=beta[bIndex], alphahat=alphahat[bIndex]),
                      cdfs),

@@ -1,4 +1,4 @@
-.PrepDataObj <- function(z, s, y, GroupReverse, withoutCdfs) {
+.PrepDataObj <- function(z, s, y, GroupReverse, withoutCdfs, method) {
   ## Various summary numbers
   ## N : total number of records in data
   ## N0, N1           : number of records in the first and second groups
@@ -11,6 +11,8 @@
   ##                       groups
   ## RR               : Ratio of probablities
   ## VE               : Vacine Efficecy
+  ## R                : Rank of y of selected records
+  ## Ras0             : distribution of the Rank of the first group
   ## F0, F1           : distribution of the first and second groups
   ## y0.uniq, y1.uniq : the sorted unique values of y in the selected records
   ##                      of the first and second groups
@@ -34,14 +36,15 @@
 
   VE <- 1L - RR
 
+  R <- rank(y[s])
+
   Fn0 <- ecdf(y0)
   Fn1 <- ecdf(y1)
 
-  
   c(list(withoutCdfs=withoutCdfs, GroupReverse=GroupReverse,
-         z=z, s=s, y=y, z0.s1=z0.s1, z1.s1=z1.s1, N=N,
+         z=z, s=s, y=y, z0.s1=z0.s1, z1.s1=z1.s1, N=N, R1=R[z[s]],
          N0=N0, N1=N1, n0=n0, n1=n1, p0=p0, p1=p1, RR=RR, VE=VE, Fn0=Fn0,
-         Fn1=Fn1, y0=y0, y1=y1),
+         Fn1=Fn1, y0=y0, y1=y1, method=method, R0.uniq=sort(unique(R[!z[s]]))),
     eval(expression(list(y0.uniq=x, F0=y)), envir=environment(Fn0)),
     eval(expression(list(y1.uniq=x, F1=y)), envir=environment(Fn1)))
 }
@@ -53,20 +56,47 @@
     mu1 - mu0
   }
 }
-  
+
 .CreateACERetValHHS <- function(Fas0, obj) {
   dFas0 <- diff(c(0L, Fas0))
 
-  mu0 <- sum(obj$y0.uniq * dFas0)
-  mu1 <- mean(obj$y1)
-
-  ACE <- .CalcDeltaMu(mu0=mu0, mu1=mu1, GroupReverse=obj$GroupReverse)
-
-  if(obj$withoutCdfs)
-    return(list(ACE=ACE))
+  if(obj$method['ACE'] || obj$method['T2']) {
+    mu0 <- sum(obj$y0.uniq * dFas0)
+  }
   
-  return(list(ACE=ACE,
-              Fas0=Fas0, FnAs0=stepfun(x=obj$y0.uniq, y=c(0, Fas0))))
+  if(obj$method['ACE']) {
+    mu1 <- mean(obj$y1)
+
+    ACE <- .CalcDeltaMu(mu0=mu0, mu1=mu1, GroupReverse=obj$GroupReverse)
+  }
+
+  if(obj$method['T1']) {
+    Rmu0 <- sum(obj$R0.uniq * dFas0)
+    Rmu1 <- mean(obj$R1)
+
+    T1 <- .CalcDeltaMu(mu0=Rmu0, mu1=Rmu1, GroupReverse=obj$GroupReverse)
+  }
+
+  if(obj$method['T2']) {
+    indx <- rep(c(FALSE, TRUE), times=c(obj$n0, obj$n1))
+    ystar0 <- obj$y0 - mean(obj$y0) - mu0
+    ystar1 <- obj$y1
+
+    Rstar <- rank(c(ystar0,ystar1))
+
+    T2 <- .CalcDeltaMu(mu0=mean(Rstar[!indx]), mu1=mean(Rstar[indx]),
+                       GroupReverse=obj$GroupReverse)
+  }
+
+  resp <- c(if(obj$method['ACE']) list(ACE=ACE),
+            if(obj$method['T1']) list(T1=T1),
+            if(obj$method['T2']) list(T2=T2))
+  
+  if(obj$withoutCdfs)
+    return(resp)
+  
+  return(c(resp,
+           list(Fas0=Fas0, FnAs0=stepfun(x=obj$y0.uniq, y=c(0, Fas0)))))
 }
 
 .CalcUpperACEHHS <- function(obj) {
@@ -76,7 +106,7 @@
   ## dFas0, dFas1 : delta of Fas0 and Fas1
 
   qc <- quantile(obj$y0, probs=obj$RR)
-  Fas0 <- ifelse(obj$y0.uniq <= qc & obj$F0 < obj$RR, obj$F0/obj$RR, 1L)
+  Fas0 <- ifelse(obj$y0.uniq <= qc & obj$F0 < obj$RR, obj$F0/obj$RR, 1)
   
   .CreateACERetValHHS(Fas0=Fas0, obj=obj)
 }
@@ -162,6 +192,7 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   }
 
   method <- match.bitarg(method)
+  names.method <- names(method)[method]
 
   UpperIndex <- bound == "upper"
   LowerIndex <- bound == "lower"
@@ -170,7 +201,7 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   DoLower <- any(LowerIndex)
   
   datObj <- .PrepDataObj(z=z, s=s, y=y, GroupReverse=GroupReverse,
-                         withoutCdfs=withoutCdfs)
+                         withoutCdfs=withoutCdfs, method=method)
 
   ACE.dim <- length(bound)
   ACE.length <- prod(ACE.dim)
@@ -183,10 +214,10 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
     ACE <- temp
 
   if(method["T1"])
-    .FeatureNotYetImplemented("method T1")
+    T1 <- temp
 
   if(method["T2"])
-    .FeatureNotYetImplemented("method T2")
+    T2 <- temp
 
   ## Done with temp
   rm(temp)
@@ -205,6 +236,12 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
     if(method["ACE"])
       ACE['upper'] <- UpperObj$ACE
 
+    if(method['T1'])
+      T1['upper'] <- UpperObj$T1
+
+    if(method['T2'])
+      T2['upper'] <- UpperObj$T2
+
     if(!withoutCdfs) {
       FnAs0['upper'] <- UpperObj$FnAs0
     }
@@ -219,6 +256,12 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
     if(method["ACE"])
       ACE['lower'] <- LowerObj$ACE
     
+    if(method['T1'])
+      T1['lower'] <- LowerObj$T1
+
+    if(method['T2'])
+      T2['lower'] <- LowerObj$T2
+
     if(!withoutCdfs)
       FnAs0['lower'] <- LowerObj$FnAs0
 
@@ -228,8 +271,8 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
 
   if(withoutCdfs)
     return(c(if(method["ACE"]) list(ACE=ACE),
-             if(method["T1"]) .FeatureNotYetImplemented("method T1"),
-             if(method["T2"]) .FeatureNotYetImplemented("method T2")))
+             if(method["T1"]) list(T1=T1),
+             if(method["T2"]) list(T2=T2)))
 
   if(!isSlaveMode && GroupReverse) {
     Fas0 <- FnAs1
@@ -241,8 +284,8 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   
   if(withoutCi) {
     return(c(if(method["ACE"]) list(ACE=ACE),
-             if(method["T1"]) .FeatureNotYetImplemented("method T1"),
-             if(method["T2"]) .FeatureNotYetImplemented("method T2"),
+             if(method["T1"]) list(T1=T1),
+             if(method["T2"]) list(T2=T2),
              list(Fas0=Fas0, Fas1=Fas1)))
   }
 
@@ -255,13 +298,24 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
 
   if(method["ACE"])
     ACE.var <- temp
-
+  
   if(method["T1"])
-    .FeatureNotYetImplemented("method T1")
+    T1.var <- temp
 
   if(method["T2"])
-    .FeatureNotYetImplemented("method T2")
+    T2.var <- temp
 
+  if(!isSlaveMode) {
+    if(method['ACE'])
+      ACE.p <- temp
+
+    if(method['T1'])
+      T1.p <- temp
+
+    if(method['T2'])
+      T2.p <- temp
+  }
+  
   ## Done with temp
   rm(temp)
   
@@ -272,8 +326,8 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
 
   if(isSlaveMode) {
     return(c(if(method["ACE"]) list(ACE=ACE, ACE.var=ACE.var),
-             if(method["T1"]) .FeatureNotYetImplemented("method T2"),
-             if(method["T2"]) .FeatureNotYetImplemented("method T2"),
+             if(method["T1"]) list(T1=T1, T1.var=T1.var),
+             if(method["T2"]) list(T2=T2, T2.var=T2.var),
              list(Fas0=Fas0, Fas1=Fas1)))
   }
   
@@ -308,43 +362,14 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   if(method["ACE"])
     ACE.ci <- temp
 
-  if(method["T1"])
-    .FeatureNotYetImplemented("method T1")
-
-  if(method["T2"])
-    .FeatureNotYetImplemented("method T2")
+  if(method['T1'])
+    T1.ci <- temp
+  
+  if(method['T2'])
+    T2.ci <- temp
 
   ## Done with temp
   rm(temp)
-  
-  ## run bootstrap method
-  if(any(ci.method == 'bootstrap')) {
-    bootACECalc <- function(i, z.seq, nVal, z, s, y, bound, GroupReverse,
-                         current.fun) {
-      index <- sample(z.seq, nVal, replace=TRUE)
-      ans <- current.fun(z=z[index], s=s[index], y=y[index], bound=bound,
-                         groupings=GroupReverse, ci.method=NULL,
-                         isSlaveMode=TRUE)$ACE
-
-      return(ans)
-    }
-    
-    Resp.vals <- apply(do.call(rbind,
-                               lapply(integer(N.boot), z.seq=seq_along(z),
-                                      nVal=datObj$N, z=datObj$z,
-                                      s=datObj$s, y=datObj$y, bound=bound,
-                                      GroupReverse=GroupReverse,
-                                      current.fun=sys.function(),
-                                      FUN=bootACECalc)),
-                       2L,
-                       FUN=function(x) c(var(x), quantile(x, probs=ci.probs)))
-
-    if(method["ACE"]) {
-      ACE.var[,'bootstrap'] <- Resp.vals[1L,, drop=FALSE]
-      ACE.ci[,,'bootstrap']  <- t(Resp.vals[-1L,, drop=FALSE])
-    }
-  }
-
   
   if('analytic' %in% ci.method) {
     calculateCi <- function(i, norm, ACE, sqrt.ACE.var) {
@@ -352,23 +377,83 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
     }
 
 
-    if(method["ACE"])
+    if(method["ACE"]) {
       ACE.ci[,,'analytic'] <- outer(seq_along(ACE), qnorm(ci.probs),
                                     FUN=calculateCi, ACE=ACE,
                                     sqrt.ACE.var=sqrt(ACE.var[,'analytic']))
+      ACE.p[,'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,'analytic'])
+    }
   }
 
-  if(method["ACE"])
-    ACE.p <- calc.pvalue(x=ACE, var=ACE.var)
+  ## run bootstrap method
+  if(any(ci.method == 'bootstrap')) {
+    bootACECalc <- function(i, nVal, z, s, y, bound, GroupReverse,
+                            names.method, current.fun) {
+      index <- sample(nVal, replace=TRUE)
+      ans <- current.fun(z=z[index], s=s[index], y=y[index], bound=bound,
+                         groupings=GroupReverse, ci.method=NULL,
+                         method=names.method, isSlaveMode=TRUE)[names.method]
+
+      return(ans)
+    }
+
+    Resp.list <- unlist(lapply(integer(N.boot), nVal=datObj$N,
+                               z=datObj$z, s=datObj$s, y=datObj$y, bound=bound,
+                               GroupReverse=GroupReverse,
+                               names.method=names.method,
+                               current.fun=sys.function(), FUN=bootACECalc))
+
+    method.grid <- expand.grid(bound=bound, method=names.method)
+    ans <- sapply(split(Resp.list, rep.int(interaction(method.grid),
+                                           times=N.boot)),
+                  FUN=function(Resp.vals, probs)
+                    c(var(Resp.vals),
+                      mean(Resp.vals > 0),
+                      quantile(Resp.vals, probs=probs)),
+                  probs=ci.probs)
+    ans.ci <- t(ans[c(-1,-2),])
+    ans.var <- ans[1,]
+    ans.p <- 2 * ifelse(ans[2,] > 0.5, 1 - ans[2,], ans[2,])
+
+    ## Done with ans, Resp.list
+    rm(ans, Resp.list)
+
+    if(method["ACE"]) {
+      method.index <- method.grid$method == "ACE"
+      ACE.ci[,,'bootstrap'] <- ans.ci[method.index,]
+      ACE.var[,'bootstrap'] <- ans.var[method.index]
+      ACE.p[,'bootstrap'] <- ans.p[method.index]
+    }
+
+    if(method["T1"]) {
+      method.index <- method.grid$method == "T1"
+      T1.ci[,,'bootstrap'] <- ans.ci[method.index,]
+      T1.p[,'bootstrap'] <- ans.p[method.index]
+    }
+
+    if(method["T2"]) {
+      method.index <- method.grid$method == "T2"
+      T2.ci[,,'bootstrap'] <- ans.ci[method.index,]
+      T2.p[,'bootstrap'] <- ans.p[method.index]
+    }
+
+    ## clean up ans.ci ans.var, and method.grid not used again
+    rm(ans.ci, ans.var, method.grid)
+  }
 
   ans <-
     structure(c(if(method["ACE"]) list(ACE=ACE[boundIndex],
                                        ACE.ci=ACE.ci[boundIndex,,, drop=FALSE],
                                        ACE.var=ACE.var[boundIndex,, drop=FALSE],
                                        ACE.p=ACE.p[boundIndex,, drop=FALSE]),
-                if(method["T1"]) .FeatureNotYetImplemented("method T1"),
-                if(method["T2"]) .FeatureNotYetImplemented("method T2"),
-                list(Fas0=Fas0[boundIndex], Fas1=Fas1[boundIndex])),
+                if(method["T1"]) list(T1=T1[boundIndex],
+                                      T1.ci=T1.ci[boundIndex,,, drop=FALSE],
+                                      T1.p=T1.p[boundIndex,, drop=FALSE]),
+                if(method["T2"]) list(T2=T2[boundIndex],
+                                      T2.ci=T2.ci[boundIndex,,, drop=FALSE],
+                                      T2.p=T2.p[boundIndex,, drop=FALSE]),
+                list(bound=bound[boundIndex],
+                     Fas0=Fas0[boundIndex], Fas1=Fas1[boundIndex])),
               class=c("sensitivity.0d", "sensitivity"),
               parameters=list(z0=groupings[1], z1=groupings[2],
                 selected=selection, s0=empty.principal.stratum[1],
