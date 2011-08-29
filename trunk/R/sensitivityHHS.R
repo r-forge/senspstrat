@@ -202,8 +202,13 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   }
 
   method <- match.bitarg(method)
+  n.method <- sum(method)
   names.method <- names(method)[method]
 
+  test <- c(upper=upperTest, lower=lowerTest, twoSided=twoSidedTest)
+  n.test <- sum(test)
+  names.test <- names(test)[test]
+  
   UpperIndex <- bound == "upper"
   LowerIndex <- bound == "lower"
 
@@ -301,7 +306,7 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
 
   ACE.var.dim <- c(ACE.dim, length(ci.method))
   ACE.var.length <- prod(ACE.var.dim)
-  ACE.var.dimnames <- c(list(bound=ACE.dimnames), list(ci.method=ci.method))
+  ACE.var.dimnames <- c(list(ACE.dimnames), list(ci.method=ci.method))
 
   temp <- array(numeric(ACE.var.length), dim=ACE.var.dim,
                 dimnames=ACE.var.dimnames)
@@ -315,17 +320,6 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
   if(method["T2"])
     T2.var <- temp
 
-  if(!isSlaveMode) {
-    if(method['ACE'])
-      ACE.p <- temp
-
-    if(method['T1'])
-      T1.p <- temp
-
-    if(method['T2'])
-      T2.p <- temp
-  }
-  
   ## Done with temp
   rm(temp)
   
@@ -340,6 +334,28 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
              if(method["T2"]) list(T2=T2, T2.var=T2.var),
              list(Fas0=Fas0, Fas1=Fas1)))
   }
+
+  ACE.p.dim <- c(ACE.dim, n.test, length(ci.method))
+  ACE.p.length <- prod(ACE.p.dim)
+  ACE.p.dimnames <- c(list(ACE.dimnames),
+                      list(test=names.test, ci.method=ci.method))
+
+  temp <- array(numeric(ACE.p.length), dim=ACE.p.dim,
+                dimnames=ACE.p.dimnames)
+  
+  if(!isSlaveMode) {
+    if(method['ACE'])
+      ACE.p <- temp
+
+    if(method['T1'])
+      T1.p <- temp
+
+    if(method['T2'])
+      T2.p <- temp
+  }
+
+  # Done with temp
+  rm(temp)
   
   ci.map <- vector('list', length(ci.type))
   names(ci.map) <- ci
@@ -391,7 +407,8 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
       ACE.ci[,,'analytic'] <- outer(seq_along(ACE), qnorm(ci.probs),
                                     FUN=calculateCi, ACE=ACE,
                                     sqrt.ACE.var=sqrt(ACE.var[,'analytic']))
-      ACE.p[,'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,'analytic'])
+      ACE.p[,,'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,'analytic'],
+                                         test=test)
     }
   }
 
@@ -419,11 +436,15 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                   FUN=function(Resp.vals, probs)
                     c(var(Resp.vals),
                       mean(Resp.vals > 0),
+                      mean(Resp.vals < 0),
                       quantile(Resp.vals, probs=probs)),
                   probs=ci.probs)
-    ans.ci <- t(ans[c(-1,-2),])
+    ans.ci <- t(ans[c(-1,-2,-3),])
     ans.var <- ans[1,]
-    ans.p <- 2 * ifelse(ans[2,] > 0.5, 1 - ans[2,], ans[2,])
+    ans.p <- cbind(if(test['upper']) ans[3,],
+                   if(test['lower']) ans[2,],
+                   if(test['twoSided']) 2 * ifelse(ans[2,] > ans[3,],
+                                                   ans[3,], ans[2,]))
 
     ## Done with ans, Resp.list
     rm(ans, Resp.list)
@@ -432,36 +453,36 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
       method.index <- method.grid$method == "ACE"
       ACE.ci[,,'bootstrap'] <- ans.ci[method.index,]
       ACE.var[,'bootstrap'] <- ans.var[method.index]
-      ACE.p[,'bootstrap'] <- ans.p[method.index]
+      ACE.p[,,'bootstrap'] <- ans.p[method.index,]
     }
 
     if(method["T1"]) {
       method.index <- method.grid$method == "T1"
       T1.ci[,,'bootstrap'] <- ans.ci[method.index,]
-      T1.p[,'bootstrap'] <- ans.p[method.index]
+      T1.p[,,'bootstrap'] <- ans.p[method.index,]
     }
 
     if(method["T2"]) {
       method.index <- method.grid$method == "T2"
       T2.ci[,,'bootstrap'] <- ans.ci[method.index,]
-      T2.p[,'bootstrap'] <- ans.p[method.index]
+      T2.p[,,'bootstrap'] <- ans.p[method.index,]
     }
 
-    ## clean up ans.ci ans.var, and method.grid not used again
-    rm(ans.ci, ans.var, method.grid)
+    ## clean up ans.ci ans.var, ans.p, and method.grid not used again
+    rm(ans.ci, ans.var, ans.p, method.grid)
   }
 
   ans <-
     structure(c(if(method["ACE"]) list(ACE=ACE[boundIndex],
                                        ACE.ci=ACE.ci[boundIndex,,, drop=FALSE],
                                        ACE.var=ACE.var[boundIndex,, drop=FALSE],
-                                       ACE.p=ACE.p[boundIndex,, drop=FALSE]),
+                                       ACE.p=ACE.p[boundIndex,,, drop=FALSE]),
                 if(method["T1"]) list(T1=T1[boundIndex],
                                       T1.ci=T1.ci[boundIndex,,, drop=FALSE],
-                                      T1.p=T1.p[boundIndex,, drop=FALSE]),
+                                      T1.p=T1.p[boundIndex,,, drop=FALSE]),
                 if(method["T2"]) list(T2=T2[boundIndex],
                                       T2.ci=T2.ci[boundIndex,,, drop=FALSE],
-                                      T2.p=T2.p[boundIndex,, drop=FALSE]),
+                                      T2.p=T2.p[boundIndex,,, drop=FALSE]),
                 list(ci.map=ci.map, bound=bound[boundIndex],
                      Fas0=Fas0[boundIndex], Fas1=Fas1[boundIndex])),
               class=c("sensitivity.0d", "sensitivity"),

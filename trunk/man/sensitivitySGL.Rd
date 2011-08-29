@@ -11,6 +11,7 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
                ci=0.95, ci.method = c("analytic", "bootstrap"),
                ci.type="twoSided", custom.FUN = NULL, na.rm = FALSE,
                N.boot = 100L, interval = c(-100, 100),
+               upperTest = FALSE, lowerTest = FALSE, twoSidedTest = TRUE,
                verbose = getOption("verbose"), isSlaveMode = FALSE)
 }
 \arguments{
@@ -99,6 +100,18 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
     by optimise to estimate alphahat.
+  }
+  \item{lowerTest}{
+    logical.  Return the lower one sided p value for SCE. Defaults
+    to \code{FALSE}
+  }
+  \item{upperTest}{
+    logical.  Return the upper one sided p value for SCE. Defaults
+    to \code{FALSE}
+  }
+  \item{twoSidedTest}{
+    logical.  Return a two sided p value for SCE. Defaults
+    to \code{TRUE}
   }
   \item{verbose}{
     logical;  prints dots when bootstrapping to show that something is happening.

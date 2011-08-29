@@ -72,6 +72,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   n.method <- sum(method)
   names.method <- names(method)[method]
   
+  test <- c(upper=upperTest, lower=lowerTest, twoSided=twoSidedTest)
+  n.test <- sum(test)
+  names.test <- names(test)[test]
+  
   if(withoutCi)
     ci.method <- NULL
   else if(isSlaveMode)
@@ -312,14 +316,6 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     T2.var <- temp
 
   if(!isSlaveMode) {
-    if(method['ACE'])
-      ACE.p <- temp
-
-    if(method['T1'])
-      T1.p <- temp
-
-    if(method['T2'])
-      T2.p <- temp
   }
   
   ## Done with temp
@@ -365,6 +361,24 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     ## Done with temp
     rm(temp)
+
+    ACE.p.dim <- c(ACE.dim, n.test, length(ci.method))
+    ACE.p.length <- prod(ACE.p.dim)
+    ACE.p.dimnames <- c(list(ACE.dimnames),
+                        list(test=names.test, ci.method=ci.method))
+
+    temp <- array(numeric(ACE.p.length), dim=ACE.p.dim,
+                  dimnames=ACE.p.dimnames)
+    
+    if(method['ACE'])
+      ACE.p <- temp
+
+    if(method['T1'])
+      T1.p <- temp
+
+    if(method['T2'])
+      T2.p <- temp
+    
   }
   
   ## run bootstrap method
@@ -451,7 +465,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                 FUN=calculateCi, ACE=ACE,
                 sqrt.ACE.var=sqrt(ACE.var[, 'analytic']))
 
-        ACE.p[,'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,'analytic'])
+        ACE.p[,,'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,'analytic'],
+                                           test=test)
       }
     }
   }
@@ -513,12 +528,15 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                   function(Resp.vals, probs)
                     c(var(Resp.vals),
                       mean(Resp.vals > 0),
+                      mean(Resp.vals < 0),
                       quantile(Resp.vals, probs=probs)),
                     probs=ci.probs)
-    ans.ci <- t(ans[c(-1,-2),])
+    ans.ci <- t(ans[c(-1,-2,-3),])
     ans.var <- ans[1,]
-    ans.p <- 2 * ifelse(ans[2,] > 0.5, 1 - ans[2,], ans[2,])
-
+    ans.p <- cbind(if(test['upper']) ans[3,],
+                   if(test['lower']) ans[2,],
+                   if(test['twoSided']) 2 * ifelse(ans[2,] > ans[3,],
+                                                   ans[3,], ans[2,]))
     ## Done with ans, Resp.list
     rm(ans, Resp.list)
 
@@ -526,23 +544,23 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       method.index <- method.grid$method == "ACE"
       ACE.ci[,,'bootstrap'] <- ans.ci[method.index,]
       ACE.var[,'bootstrap'] <- ans.var[method.index]
-      ACE.p[,'bootstrap'] <- ans.p[method.index]
+      ACE.p[,,'bootstrap'] <- ans.p[method.index,]
     }
 
     if(method["T1"]) {
       method.index <- method.grid$method == "T1"
       T1.ci[,,'bootstrap'] <- ans.ci[method.index,]
-      T1.p[,'bootstrap'] <- ans.p[method.index]
+      T1.p[,,'bootstrap'] <- ans.p[method.index,]
     }
 
     if(method["T2"]) {
       method.index <- method.grid$method == "T2"
       T2.ci[,,'bootstrap'] <- ans.ci[method.index,]
-      T2.p[,'bootstrap'] <- ans.p[method.index]
+      T2.p[,,'bootstrap'] <- ans.p[method.index,]
     }
 
     ## clean up ans.ci ans.var, and method.grid not used again
-    rm(ans.ci, ans.var, method.grid)
+    rm(ans.ci, ans.var, ans.p, method.grid)
   }
 
   if(!isSlaveMode && GroupReverse)
@@ -553,13 +571,13 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   ans <- structure(c(if(method["ACE"]) list(ACE=ACE[bIndex],
                                             ACE.ci=ACE.ci[bIndex,,, drop=FALSE],
                                             ACE.var=ACE.var[bIndex,, drop=FALSE],
-                                            ACE.p=ACE.p[bIndex,, drop=FALSE]),
+                                            ACE.p=ACE.p[bIndex,,, drop=FALSE]),
                      if(method["T1"]) list(T1=T1[bIndex],
                                            T1.ci=T1.ci[bIndex,,, drop=FALSE],
-                                           T1.p=T1.p[bIndex,, drop=FALSE]),
+                                           T1.p=T1.p[bIndex,,, drop=FALSE]),
                      if(method["T2"]) list(T2=T2[bIndex],
                                            T2.ci=T2.ci[bIndex,,, drop=FALSE],
-                                           T2.p=T2.p[bIndex,, drop=FALSE]),
+                                           T2.p=T2.p[bIndex,,, drop=FALSE]),
                      list(ci.map=ci.map, beta=beta[bIndex],
                           alphahat=alphahat[bIndex]),
                      cdfs),

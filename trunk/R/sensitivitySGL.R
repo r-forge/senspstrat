@@ -236,6 +236,7 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
                            ci.type="twoSided",
                            custom.FUN=NULL,
                            na.rm=FALSE, N.boot=100L, interval=c(-100,100),
+                           upperTest=FALSE, lowerTest=FALSE, twoSidedTest=TRUE,
                            verbose=getOption("verbose"), isSlaveMode=FALSE) {
 
   ## z - group that subject belongs to
@@ -312,7 +313,11 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     ci.method <- "analytic"
   else
     ci.method <- sort(unique(match.arg(ci.method, several.ok=TRUE)))
-  
+
+  test <- c(upper=upperTest, lower=lowerTest, twoSided=twoSidedTest)
+  n.test <- sum(test)
+  names.test <- names(test)[test]
+
   ## N  - number subjects
   ## N0 - number of subjects in group 0
   ## N1 - number of subjects in group 1
@@ -479,6 +484,11 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
         ci.map[[i]] <- c((1-ci[i])/2, ci[i] + (1 - ci[i])/2)
   }
 
+  SCE.p.dim <- c(SCE.dim, n.test, length(ci.method))
+  SCE.p.dimnames <- c(SCE.dimnames, list(test=names.test, ci.method=ci.method))
+
+  SCE.p <- array(numeric(0), dim=SCE.p.dim, dimnames=SCE.p.dimnames)
+  
   ci.probs <- unique(unlist(ci.map, recursive=TRUE, use.names=FALSE))
   ci.probsLen <- length(ci.probs)
 
@@ -505,8 +515,10 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     result.ci <- array(numeric(0),
                        dim=SCE.ci.dim,
                        dimnames=SCE.ci.dimnames)
-  }    
-  
+
+    result.p <- array(numeric(0), dim=SCE.p.dim, dimnames=SCE.p.dimnames)
+  }
+
   if(doAnalyticCi) {
     Gamma <- Omega <- matrix(0, ncol=len.total, nrow=len.total)
 
@@ -600,6 +612,9 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
                                    rep.int(sqrt(SCE.var[,,'analytic']),
                                            ci.probsLen),
                                    dim=c(SCE.dim, ci.probsLen))
+
+    SCE.p[,,,'analytic'] <- calc.pvalue(x=SCE, var=SCE.var[,,'analytic'],
+                                        test=test)
   }
     
   if(doBootStrapCi) {
@@ -644,17 +659,27 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
       dim(vals) <- c(nrow(vals), ncol(vals), 1L)
 
     vals <- apply(vals, c(2L, 3L),
-                  FUN=function(x) return(c(var(x), quantile(x, probs=ci.probs))))
+                  FUN=function(x) return(c(var(x), mean(x > 0),
+                    mean(x < 0), quantile(x, probs=ci.probs))))
     
     if(verbose) cat("\n")
 
     SCE.var.boot = vals[1,,1L,drop=FALSE]
-    SCE.ci.boot = t(array(vals[-1,,1L,drop=FALSE], dim=c(nrow(vals)-1L, ncol(vals))))
+    SCE.ci.boot = t(array(vals[c(-1,-2,-3),,1L,drop=FALSE], dim=c(nrow(vals)-3L, ncol(vals))))
+    SCE.p.boot <- cbind(if(test['upper']) vals[3,,1L,drop=FALSE],
+                        if(test['lower']) vals[2,,1L,drop=FALSE],
+                        if(test['twoSided']) 2 * ifelse(vals[2,,1L,drop=FALSE] > vals[3,,1L,drop=FALSE],
+                                                        vals[3,,1L,drop=FALSE], vals[2,,1L,drop=FALSE]))
+
     
     if(!is.null(custom.FUN)) {
       result.var.boot <- vals[1L,,2L]
-      result.ci.boot <- t(array(vals[-1L,,2L], dim=c(nrow(vals)-1L, ncol(vals))))
-    }      
+      result.ci.boot <- t(array(vals[c(-1L,-2L,-3L),,2L], dim=c(nrow(vals)-3L, ncol(vals))))
+      result.p.boot <- cbind(if(test['upper']) vals[3,,2L,drop=FALSE],
+                             if(test['lower']) vals[2,,2L,drop=FALSE],
+                             if(test['twoSided']) 2 * ifelse(vals[2,,2L,drop=FALSE] > vals[3,,1L,drop=FALSE],
+                                                             vals[3,,2L,drop=FALSE], vals[2,,1L,drop=FALSE]))
+    }
 
     dim(SCE.var.boot) <- SCE.dim
     dim(SCE.ci.boot) <- c(SCE.dim, ci.probsLen)
@@ -662,6 +687,7 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
     SCE.var[,,'bootstrap'] <- SCE.var.boot
 
     SCE.ci[,,,'bootstrap'] <- SCE.ci.boot
+    SCE.p[,,,'bootstrap'] <- SCE.p.boot
 
     if(!is.null(custom.FUN)) {
       dim(result.var.boot) <- SCE.dim
@@ -669,16 +695,20 @@ sensitivitySGL <- function(z, s, d, y, v, beta, tau, time.points,
 
       dim(result.ci.boot) <- c(SCE.dim, ci.probsLen)
       result.ci[,,,"bootstrap"] <- result.ci.boot
+
+      result.p[,,,"bootstrap"] <- result.p.boot
     }
   }
 
   ans <- c(list(SCE=SCE[betaIndex,tpIndex,drop=FALSE],
                 SCE.var=SCE.var[betaIndex, tpIndex, ,drop=FALSE],
-                SCE.ci=SCE.ci[betaIndex, tpIndex,,, drop=FALSE]),
+                SCE.ci=SCE.ci[betaIndex, tpIndex,,, drop=FALSE],
+                SCE.p=SCE.p[betaIndex, tpIndex,,, drop=FALSE]),
            if(!is.null(custom.FUN))
               list(result=result,
                    result.var=result.var,
-                   result.ci=result.ci),
+                   result.ci=result.ci,
+                   result.p),
            list(ci.map=ci.map, beta=betaOrig, alphahat=alphahat[betaIndex],
                 Fas0=FnAs0[betaIndex], Fas1=FnAs1))
 
