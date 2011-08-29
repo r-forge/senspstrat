@@ -409,13 +409,15 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
         for(j in seq_along(beta1)) {
           ACE.ci[i,j,k,,'bootstrap'] <- quantile(ACE.list[i,j,k,], probs=ci.probs)
           ACE.var[i,j,k,'bootstrap'] <- var(ACE.list[i,j,k,])
+          temp <- mean(ACE.list[i,j,k,] > 0)
+          ACE.p[i,j,k,'bootstrap'] <- 2 * ifelse(temp > 0.5, 1 - temp, temp)
         }
       }
     }
     if(verbose) cat("\n")
   }
 
-  return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var,
+  return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var, ACE.p=ACE.p,
                           ci.map=ci.map),
                      cdfs),
                    class=c("sensitivity.2.0d", "sensitivity.0d", "sensitivity"),
