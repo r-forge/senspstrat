@@ -1,8 +1,9 @@
 sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                           selection, groupings, ci=0.95,
-                          ci.method=c("analytic", "bootstrap"), na.rm=FALSE,
+                          ci.method=c("analytic", "bootstrap"),
+                          ci.type="twoSided", na.rm=FALSE,
                           N.boot=100, interval=c(-100,100),
-                          oneSidedTest = FALSE, twoSidedTest = TRUE,
+                          upperTest=FALSE, lowerTest=FALSE, twoSidedTest=TRUE,
                           verbose=getOption("verbose"), isSlaveMode=FALSE)
 {
   withoutCdfs <- isSlaveMode && !missing(ci.method) && is.null(ci.method)
@@ -34,7 +35,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                 .CheckLength(z=z, s=s, y=y),
                 .CheckZ(z, groupings, na.rm=na.rm),
                 .CheckS(s, na.rm=na.rm),
-                .CheckY(y, s, selection, na.rm=na.rm))
+                .CheckY(y, s, selection, na.rm=na.rm),
+                .CheckCi(ci=ci, ci.type=ci.type))
     
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
@@ -61,6 +63,13 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
 
     if(length(ErrMsg) > 0L)
       stop(paste(ErrMsg, collapse="\n  "))
+
+    if(missing(ci.type)) {
+      ci.type <- rep('twoSided', length.out=length(ci))
+    } else {
+      ci.type <- match.arg(ci.type, c('upper', 'lower', 'twoSided'),
+                           several.ok=TRUE)
+    }
   }
 
   if(withoutCi)
@@ -247,22 +256,24 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     return(c(list(ACE=ACE), cdfs))
   
   if(!isSlaveMode) {
-    if(twoSidedTest) {
-      if(ci < 0.5)
-        ci.probs <- c(ci, 1L) - ci/2L
-      else
-        ci.probs <- c(0L, ci) + (1-ci)/2
-    } else {
-      ci.probs <- NULL
-    }
-
-    if(oneSidedTest) {
-      ci.probs <- c(ci.probs, ci)
-    }
-
-    ci.probs <- sort(unique(ci.probs))
-    ci.probsLen <- length(ci.probs)
+    ci.map <- vector('list', length(ci.type))
+    names(ci.map) <- ci
   
+    for(i in seq_along(ci.type)) {
+      if(ci.type[i] == "upper")
+        ci.map[[i]] <- ci[i]
+      else if(ci.type[i] == "lower")
+        ci.map[[i]] <- 1 - ci[i]
+      else if(ci.type[i] == "twoSided")
+        if(ci[i] < 0.5)
+          ci.map[[i]] <- c(ci[i] - ci[i]/2, 1 - ci[i]/2)
+        else
+          ci.map[[i]] <- c((1-ci[i])/2, ci[i] + (1 - ci[i])/2)
+    }
+
+    ci.probs <- sort(unique(unlist(ci.map, recursive=TRUE, use.names=FALSE)))
+    ci.probsLen <- length(ci.probs)
+
     ACE.ci.dim <- c(ACE.dim, ci.probsLen, length(ci.method))
     ACE.ci.length <- prod(ACE.ci.dim)
     ACE.ci.dimnames <- c(ACE.dimnames,
@@ -281,6 +292,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   ACE.var <- array(numeric(ACE.var.length), dim=ACE.var.dim,
                    dimnames=ACE.var.dimnames)
 
+  ACE.p <- ACE.var
+  
   ## run bootstrap method
   if(any(ci.method == "analytic")) {
     if(verbose)
@@ -368,6 +381,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       ACE.ci[,,,,"analytic"] <- outer(seq_along(ACE), qnorm(ci.probs),
                                       FUN=calculateCi, ACE=ACE,
                                       sqrt.ACE.var=sqrt(ACE.var[,,,'analytic']))
+      ACE.p[,,, 'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,,,'analytic'])
     }
     
     if(verbose) cat("\n")
@@ -401,9 +415,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     if(verbose) cat("\n")
   }
 
-#  ACE.p <- calc.pvalue(ACE, ACE.var)
-
-  return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var),
+  return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var,
+                          ci.map=ci.map),
                      cdfs),
                    class=c("sensitivity.2.0d", "sensitivity.0d", "sensitivity"),
                    N.boot=N.boot,

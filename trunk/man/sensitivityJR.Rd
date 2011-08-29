@@ -13,8 +13,9 @@
 sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
               selection, groupings,
               ci = 0.95, ci.method = c("analytic","bootstrap"),
-              na.rm = FALSE, N.boot = 100, interval = c(-100, 100),
-              oneSidedTest = FALSE, twoSidedTest = TRUE,
+              ci.type = "twoSided", na.rm = FALSE, N.boot = 100,
+              interval = c(-100, 100),
+              upperTest = FALSE, lowerTest = FALSE, twoSidedTest = TRUE,
               verbose=getOption("verbose"), isSlaveMode = FALSE)
 }
 \arguments{
@@ -63,6 +64,12 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     variance are calculated.  Can be \dQuote{analytic} or
     \dQuote{bootstrap}. Defaults to \code{c("analytic","bootstrap")}
   }
+  \item{ci.type}{
+    character vector; type of confidence interval that the corisponding
+    \code{ci} element is refering to.  Can be \code{"upper"},
+    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    \code{"twoSided"}.
+  }    
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
     values should be removed from the data set.
@@ -75,12 +82,16 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     numeric vector of length 2. Controls the range limits used to
     by optimise to estimate alpha.
   }
-  \item{oneSidedTest}{
-    logical.  Return a one sided confidence interval for ACE. Defaults
+  \item{lowerTest}{
+    logical.  Return the lower one sided p value for the ACE. Defaults
+    to \code{FALSE}
+  }
+  \item{upperTest}{
+    logical.  Return the upper one sided p value for the ACE. Defaults
     to \code{FALSE}
   }
   \item{twoSidedTest}{
-    logical.  Return a two sided confidence interval for ACE. Defaults
+    logical.  Return a two sided p value for the ACE. Defaults
     to \code{TRUE}
   }
   \item{verbose}{
