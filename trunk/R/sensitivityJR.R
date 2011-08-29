@@ -72,6 +72,10 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     }
   }
 
+  test <- c(upper=upperTest, lower=lowerTest, twoSided=twoSidedTest)
+  n.test <- sum(test)
+  names.test <- names(test)[test]
+  
   if(withoutCi)
     ci.method <- NULL
   else if(isSlaveMode)
@@ -292,7 +296,11 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   ACE.var <- array(numeric(ACE.var.length), dim=ACE.var.dim,
                    dimnames=ACE.var.dimnames)
 
-  ACE.p <- ACE.var
+  ACE.p.dim <- c(ACE.dim, n.test, length(ci.method))
+  ACE.p.length <- prod(ACE.p.dim)
+  ACE.p.dimnames <- c(ACE.dimnames, list(test=names.test, ci.method=ci.method))
+  
+  ACE.p <- array(numeric(ACE.p.length), dim=ACE.p.dim, dimnames=ACE.p.dimnames)
   
   ## run bootstrap method
   if(any(ci.method == "analytic")) {
@@ -381,7 +389,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       ACE.ci[,,,,"analytic"] <- outer(seq_along(ACE), qnorm(ci.probs),
                                       FUN=calculateCi, ACE=ACE,
                                       sqrt.ACE.var=sqrt(ACE.var[,,,'analytic']))
-      ACE.p[,,, 'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,,,'analytic'])
+      ACE.p[,,,, 'analytic'] <- calc.pvalue(x=ACE, var=ACE.var[,,,'analytic'],
+                                            test=test)
     }
     
     if(verbose) cat("\n")
@@ -409,8 +418,17 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
         for(j in seq_along(beta1)) {
           ACE.ci[i,j,k,,'bootstrap'] <- quantile(ACE.list[i,j,k,], probs=ci.probs)
           ACE.var[i,j,k,'bootstrap'] <- var(ACE.list[i,j,k,])
-          temp <- mean(ACE.list[i,j,k,] > 0)
-          ACE.p[i,j,k,'bootstrap'] <- 2 * ifelse(temp > 0.5, 1 - temp, temp)
+          lower <- mean(ACE.list[i,j,k,] > 0)
+          upper <- mean(ACE.list[i,j,k,] < 0)
+
+          if(upperTest)
+            ACE.p[i,j,k,'upper','bootstrap'] <- upper
+
+          if(lowerTest)
+            ACE.p[i,j,k,'lower','bootstrap'] <- lower
+
+          if(twoSidedTest)
+            ACE.p[i,j,k,'twoSided', 'bootstrap'] <- 2 * min(lower, upper)
         }
       }
     }
