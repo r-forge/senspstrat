@@ -219,6 +219,17 @@ sens.time<-with(vaccine.trial,
                )
 sens.time
 
+sens.time<-with(vaccine.trial,
+                sensitivitySGL(z=treatment, s=hiv.outcome, y=followup.yearsART,
+                          d=ARTinitiation, beta=c(.25, 0,-.25,-.5), tau=3,
+                          time.points=c(2,3), selection="infected",
+                          trigger="initiated ART", groupings=c("placebo","vaccine"),
+                          empty.principal.stratum=c("not infected","infected"),
+                          N.boot=100, interval=c(-200,200),
+                          upperTest=TRUE, lowerTest=TRUE, twoSidedTest=TRUE)
+               )
+sens.time
+
 sens.time2<-with(vaccine.trial,
                 sensitivitySGL(z=treatment, s=hiv.outcome, y=followup.yearsART,
                           d=ARTinitiation, beta=c(.25, 0,-.25,-.5), tau=3,

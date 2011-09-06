@@ -11,9 +11,10 @@
 sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
                groupings, empty.principal.stratum, ci = 0.95,
                ci.method = c("bootstrap", "analytic"),
-               ci.type = "twoSided", na.rm = FALSE, N.boot = 100,
-               upperTest = FALSE, lowerTest = FALSE, twoSidedTest = TRUE,
-               method = c("ACE", "T1", "T2"), isSlaveMode=FALSE)
+               ci.type = "twoSided", custom.FUN = NULL, na.rm = FALSE,
+               N.boot = 100, upperTest = FALSE, lowerTest = FALSE,
+               twoSidedTest = TRUE, method = c("ACE", "T1", "T2"),
+               isSlaveMode=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -65,6 +66,12 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
     \code{"lower"}, or \code{"twoSided"}.  Defaults to
     \code{"twoSided"}.
   }    
+  \item{custom.FUN}{
+    function; function to calculate custom result. \code{mu0}, \code{muhat0},
+    \code{mu1}, \code{muhat1}, \code{p0}, \code{p1} are available to be used as
+    arguments in the custom function.  The custom function must return a
+    single value.
+  }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
     values should be removed from the data set.
@@ -179,6 +186,7 @@ est.bounds<-with(vaccine.trial,
                      selection="infected", groupings=c("placebo","vaccine"),
                      empty.principal.stratum=c("not infected","infected"),
                      method=c("ACE", "T1", "T2"), N.boot=100,
+                     custom.FUN=function(muhat0, muhat1, ...) muhat1 - muhat0,
                      upperTest=TRUE, lowerTest=TRUE, twoSidedTest=TRUE)
                 )
 est.bounds

@@ -11,7 +11,7 @@
 sensitivityGBH(z, s, y, beta, selection, groupings,
                empty.principal.stratum, ci = 0.95,
                ci.method = c("analytic", "bootstrap"),
-               ci.type = "twoSided", na.rm = FALSE,
+               ci.type = "twoSided", custom.FUN = NULL, na.rm = FALSE,
                N.boot = 100, interval = c(-100, 100),
                upperTest = FALSE, lowerTest = FALSE, twoSidedTest = TRUE,
                method = c("ACE", "T1", "T2"), isSlaveMode=FALSE)
@@ -64,6 +64,12 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \code{"lower"}, or \code{"twoSided"}.  Defaults to
     \code{"twoSided"}.
   }    
+  \item{custom.FUN}{
+    function; function to calculate custom result. \code{mu0}, \code{muhat0},
+    \code{mu1}, \code{muhat1}, \code{p0}, \code{p1} are available to be used as
+    arguments in the custom function.  The custom function must return a
+    single value.
+  }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
     values should be removed from the data set.
@@ -261,7 +267,8 @@ ans<-with(vaccine.trial,
                     groupings=c("placebo","vaccine"),
                     empty.principal.stratum=c("not infected","infected"),
                     ci.method="bootstrap",
-                    N.boot=100,
+                    custom.FUN=function(muhat0, muhat1, ...) muhat1 - muhat0,
+                    N.boot=100, method=c("ACE", "T1", "T2"),
                     upperTest=TRUE, lowerTest=TRUE, twoSidedTest=TRUE)
          )
 ans

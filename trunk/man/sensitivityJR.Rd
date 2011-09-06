@@ -13,8 +13,8 @@
 sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
               selection, groupings,
               ci = 0.95, ci.method = c("analytic","bootstrap"),
-              ci.type = "twoSided", na.rm = FALSE, N.boot = 100,
-              interval = c(-100, 100),
+              ci.type = "twoSided", custom.FUN=NULL, na.rm = FALSE,
+              N.boot = 100, interval = c(-100, 100),
               upperTest = FALSE, lowerTest = FALSE, twoSidedTest = TRUE,
               verbose=getOption("verbose"), isSlaveMode = FALSE)
 }
@@ -69,7 +69,13 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     \code{ci} element is refering to.  Can be \code{"upper"},
     \code{"lower"}, or \code{"twoSided"}.  Defaults to
     \code{"twoSided"}.
-  }    
+  }
+  \item{custom.FUN}{
+    function; function to calculate custom result. \code{mu0}, \code{muhat0},
+    \code{mu1}, \code{muhat1}, \code{p0}, \code{p1} are available to be used as
+    arguments in the custom function.  The custom function must return a
+    single value.
+  }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
     values should be removed from the data set.
@@ -223,6 +229,7 @@ ansJR<-with(vaccine.trial,
                     beta1=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
                     phi=c(0.95,0.90,0.80), selection="infected",
                     groupings=c("placebo","vaccine"),
+                    custom.FUN=function(muhat0, muhat1, ...) muhat1 - muhat0,
                     upperTest=TRUE, lowerTest=TRUE, twoSidedTest=TRUE,
                     N.boot=100)
          )

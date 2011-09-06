@@ -16,6 +16,7 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
                ci=0.95, ci.method = c("bootstrap", "analytic"),
                ci.type="twoSided", custom.FUN = NULL, na.rm = FALSE,
                N.boot = 100L, N.events = NULL, interval = c(-100, 100),
+               upperTest = FALSE, lowerTest = FALSE, twoSidedTest=TRUE,
                inCore = TRUE,verbose = getOption("verbose"),
                colsPerFile = 1000L, isSlaveMode = FALSE)
 }
@@ -114,6 +115,18 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
     by optimise to estimate alphahat.
+  }
+  \item{lowerTest}{
+    logical.  Return the lower one sided p value for SCE. Defaults
+    to \code{FALSE}
+  }
+  \item{upperTest}{
+    logical.  Return the upper one sided p value for SCE. Defaults
+    to \code{FALSE}
+  }
+  \item{twoSidedTest}{
+    logical.  Return a two sided p value for SCE. Defaults
+    to \code{TRUE}
   }
   \item{verbose}{
     logical;  prints dots when bootstrapping to show that something is happening.

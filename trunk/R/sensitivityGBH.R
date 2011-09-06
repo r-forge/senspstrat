@@ -1,7 +1,7 @@
 sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                            empty.principal.stratum, ci=0.95,
                            ci.method=c("analytic", "bootstrap"),
-                           ci.type="twoSided", na.rm=FALSE, 
+                           ci.type="twoSided", custom.FUN=NULL, na.rm=FALSE, 
                            N.boot=100, interval=c(-100,100),
                            upperTest=FALSE, lowerTest=FALSE, twoSidedTest=TRUE,
                            method=c("ACE", "T1", "T2"),
@@ -15,6 +15,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
   doInfinite <- any(is.infinite(beta))
   doFinite <- any(is.finite(beta))
+  hasCustomFun <- !is.null(custom.FUN)
+  
 
   ## if(doInfinite && !doFinite) {
   ##   funCall <- match.call()
@@ -134,7 +136,9 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   y1.uniq <- knots(Fas1)
   dFas1 <- diff(c(0, Fas1(y1.uniq)))
 
+  mu0 <- mean(y[z0.s1], na.rm=TRUE)
   mu1 <- mean(y[z1.s1], na.rm=TRUE)
+  
   Rmu1 <- mean(R[z.s1])
 
   calc.alphaAndW <- function(beta, y, dF, C, interval) {
@@ -145,10 +149,11 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   }
 
   calc.mu0AndAlpha <- function(betas, y, R, dF, dR, C, y0, y1, Rmu1,
-                               n0, n1, interval, method, GroupReverse) {
+                                  n0, n1, mu0, interval, method, GroupReverse) {
     method["ACE"] <- TRUE
-    resp <- vector(mode="list", length=sum(method) + 2L)
-    names(resp) <- c("alphahat", "dFas", names(method)[method])
+    resp <- vector(mode="list", length=sum(method) + 2L + !is.null(custom.FUN))
+    names(resp) <- c("alphahat", "dFas", names(method)[method],
+                     if(!is.null(custom.FUN)) "result")
 
     temp <- matrix(sapply(betas, FUN=calc.alphaAndW, y=y, dF=dF, C=C,
                           interval=interval), ncol=length(betas))
@@ -161,7 +166,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     
     resp$dFas <- dF*w/C
 
-    resp$mu0 <- colSums(y*resp$dFas)
+    resp$muhat0 <- colSums(y*resp$dFas)
     if(method["T1"]) {
       Rmu0 <- colSums(R*(dR0*w/C))
       if(GroupReverse)
@@ -173,7 +178,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     }
 
     if(method["T2"]) {
-      Y0star <- outer(y, mean(y0) - resp$mu0,
+      Y0star <- outer(y, mu0 - resp$muhat0,
                       FUN=`-`)[rep.int(seq_along(y),
                                        times=tabulate(match(y0, y))),,
                                drop=FALSE]
@@ -214,19 +219,22 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   if(method["T2"])
     T2 <- temp
 
+  if(hasCustomFun)
+    result <- temp
+  
   #Done with temp
   rm(temp)
   
   if(doFinite) {
     temp <- calc.mu0AndAlpha(finiteBeta, y=y0.uniq, R=R0.uniq, dF=dF0, dR=dR0,
                              C=RR, y0=y0, y1=y1, Rmu1=Rmu1, n0=n0, n1=n1,
-                             interval=interval, method=method,
+                             mu0=mu0, interval=interval, method=method,
                              GroupReverse=GroupReverse)
     
     alphahat[finiteIndex] <- temp$alphahat
     dFas0 <- temp$dFas
 
-    mu0 <- temp$mu0
+    muhat0 <- temp$muhat0
 
     if(method["T1"])
       T1[finiteIndex] <- temp$T1
@@ -246,23 +254,29 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     if(method["ACE"]) {
       if(GroupReverse) {
-        ACE[finiteIndex] <- mu0 - mu1
+        ACE[finiteIndex] <- muhat0 - mu1
       } else {
-        ACE[finiteIndex] <- mu1 - mu0
+        ACE[finiteIndex] <- mu1 - muhat0
       }
     }
+
+    if(hasCustomFun)
+      result[finiteIndex] <- custom.FUN(mu0=mu0, muhat0=muhat0,
+                                       mu1=mu1, muhat1=mu1,
+                                       p0=p0, p1=p1)
   }
 
   if(doInfinite) {
     if(withoutCdfs) {
       infiniteACE.info <- sensitivityHHS(z=z,s=s,y=y, bound=bounds,
                                          groupings=GroupReverse,
-                                         ci.method=NULL, method=names.method,
-                                         isSlaveMode=TRUE)
+                                         ci.method=NULL, custom.FUN=custom.FUN,
+                                         method=names.method, isSlaveMode=TRUE)
     } else {
       infiniteACE.info <- sensitivityHHS(z=z,s=s,y=y, bound=bounds,
                                          groupings=GroupReverse,
                                          ci.method=ci.method,
+                                         custom.FUN=custom.FUN,
                                          method=names.method, isSlaveMode=TRUE)
 
       if(!withoutCdfs) {
@@ -280,12 +294,16 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     if(method["T2"])
       T2[infiniteIndex] <- infiniteACE.info$T2
+
+    if(hasCustomFun)
+      result[infiniteIndex] <- infiniteACE.info$result
   }
 
   if(withoutCdfs) {
     return(c(if(method["ACE"]) list(ACE=ACE),
              if(method["T1"]) list(T1=T1),
-             if(method["T2"]) list(T2=T2)))
+             if(method["T2"]) list(T2=T2),
+             if(hasCustomFun) list(result=result)))
   }
   
   if(withoutCi) {
@@ -297,6 +315,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     return(c(if(method["ACE"]) list(ACE=ACE),
              if(method["T1"]) list(T1=T1),
              if(method["T2"]) list(T2=T2),
+             if(hasCustomFun) list(result=result),
              cdfs))
   }
 
@@ -315,8 +334,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   if(method['T2'])
     T2.var <- temp
 
-  if(!isSlaveMode) {
-  }
+  if(hasCustomFun && 'bootstrap' %in% ci.method)
+    result <- temp[, "bootstrap", drop=FALSE]
   
   ## Done with temp
   rm(temp)
@@ -359,6 +378,9 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     if(method['T2'])
       T2.ci <- temp
 
+    if(hasCustomFun && 'bootstrap' %in% ci.method)
+      result.ci <- temp[,, "bootstrap", drop=FALSE]
+  
     ## Done with temp
     rm(temp)
 
@@ -378,7 +400,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     if(method['T2'])
       T2.p <- temp
-    
+
+    if(hasCustomFun && 'bootstrap' %in% ci.method)
+      result.p <- temp[,, "bootstrap", drop=FALSE]
+
+    ## Done with temp
+    rm(temp)
   }
   
   ## run bootstrap method
@@ -401,7 +428,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
             rbind((p0-s)*(1-z),
                   (p1-s)*z,
                   s*(1/(exp(-beta[i]*y-alphahat[i])+1)-p1/p0)*(1-z),
-                  s*(mu0[i]-p0*y/(p1*(exp(-beta[i]*y-alphahat[i])+1)))*(1-z),
+                  s*(muhat0[i]-p0*y/(p1*(exp(-beta[i]*y-alphahat[i])+1)))*(1-z),
                   s*(mu1-y)*z)
           
           Omega <- Omega/N
@@ -487,10 +514,11 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   if(any(ci.method == 'bootstrap')) {
     index <- seq_len(N)
     current.fun <- sys.function()
+    returned.vals <- c(names.method, if(hasCustomFun) "result")
     Resp.list <- unlist(replicate(N.boot, {
-      Resp.vals <- numeric(length(beta)*n.method)
-      dim(Resp.vals) <- c(length(beta), n.method)
-      dimnames(Resp.vals) <- list(beta, names.method)
+      Resp.vals <- numeric(length(beta)*length(returned.vals))
+      dim(Resp.vals) <- c(length(beta), length(returned.vals))
+      dimnames(Resp.vals) <- list(beta, returned.vals)
       
       new.index <- sample(N, replace=TRUE)
       new.z <- z[new.index]
@@ -500,19 +528,21 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
         temp <- sensitivityHHS(z=new.z, s=new.s, y=new.y,
                                bound=bounds,
                                groupings=GroupReverse,
-                               ci.method=NULL, method=names.method,
-                               isSlaveMode=TRUE)[names.method]
-        for(i in names.method) {
+                               ci.method=NULL, custom.FUN=custom.FUN,
+                               method=names.method,
+                               isSlaveMode=TRUE)[returned.vals]
+        for(i in returned.vals) {
           Resp.vals[infiniteIndex,i] <- temp[[i]]
         }
       }
 
       temp <- current.fun(z=new.z, s=new.s, y=new.y,
                           beta=beta[finiteIndex],
-                          groupings=GroupReverse, method=names.method,
-                          ci.method=NULL, isSlaveMode=TRUE)[names.method]
+                          groupings=GroupReverse, custom.FUN=custom.FUN,
+                          method=names.method,
+                          ci.method=NULL, isSlaveMode=TRUE)[returned.vals]
 
-      for(i in names.method) {
+      for(i in returned.vals) {
         Resp.vals[finiteIndex, i] <- temp[[i]]
       }
 
@@ -521,10 +551,16 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     ## Done with index and current.fun
     rm(index, current.fun)
+
+    N.bootActual <- length(Resp.list) %/% length(returned.vals)
+
+    method.grid <- expand.grid(beta=beta, method=returned.vals)
+
+    ## Done with returned.vals
+    rm(returned.vals)
     
-    method.grid <- expand.grid(beta=beta, method=names.method)
     ans <- sapply(split(Resp.list, rep.int(interaction(method.grid),
-                                           times=N.boot)),
+                                           times=N.bootActual)),
                   function(Resp.vals, probs)
                     c(var(Resp.vals),
                       mean(Resp.vals > 0),
@@ -559,6 +595,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
       T2.p[,,'bootstrap'] <- ans.p[method.index,]
     }
 
+    if(hasCustomFun) {
+      method.index <- method.grid$method == "result"
+      result.ci[,,'bootstrap'] <- ans.ci[method.index,]
+      result.p[,,'bootstrap'] <- ans.p[method.index,]
+    }
+
     ## clean up ans.ci ans.var, and method.grid not used again
     rm(ans.ci, ans.var, ans.p, method.grid)
   }
@@ -578,6 +620,10 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                      if(method["T2"]) list(T2=T2[bIndex],
                                            T2.ci=T2.ci[bIndex,,, drop=FALSE],
                                            T2.p=T2.p[bIndex,,, drop=FALSE]),
+                     if(hasCustomFun) list(result=result[bIndex]),
+                     if(hasCustomFun && 'bootstrap' %in% ci.method)
+                        list(result.ci=result.ci[bIndex,,, drop=FALSE],
+                             result.p=result.p[bIndex,,, drop=FALSE]),
                      list(ci.map=ci.map, beta=beta[bIndex],
                           alphahat=alphahat[bIndex]),
                      cdfs),

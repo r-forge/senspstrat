@@ -1,7 +1,7 @@
 sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                           selection, groupings, ci=0.95,
                           ci.method=c("analytic", "bootstrap"),
-                          ci.type="twoSided", na.rm=FALSE,
+                          ci.type="twoSided", custom.FUN=NULL, na.rm=FALSE,
                           N.boot=100, interval=c(-100,100),
                           upperTest=FALSE, lowerTest=FALSE, twoSidedTest=TRUE,
                           verbose=getOption("verbose"), isSlaveMode=FALSE)
@@ -11,6 +11,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                 (isSlaveMode && !(!missing(ci.method) &&
                                  !is.null(ci.method) &&
                                  'analytic' %in% ci.method)))
+  hasCustomFun <- !is.null(custom.FUN)
 
   calc.coefs <- function(y, beta, dF, RR, interval) {
     coefs <- vector(length(beta), "list")
@@ -89,6 +90,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   y0 <- y[z0.s1]
   y1 <- y[z1.s1]
 
+  y0.mean <- mean(y0)
+  y1.mean <- mean(y1)
+
   N <- length(z)
   N0 <- sum(!z)
   n0 <- sum(z0.s1)
@@ -133,6 +137,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
 
   ACE <- array(numeric(ACE.length), dim=ACE.dim, dimnames=ACE.dimnames)
 
+  if(hasCustomFun)
+    result <- ACE
+  
   FnAs0.dim <- ACE.dim[-2L]
   FnAs0.length <- prod(FnAs0.dim)
   FnAs0.dimnames <- ACE.dimnames[-2L]
@@ -162,7 +169,8 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     if(phi[i] == 1) {
       ACE.info <- sensitivityGBH(z=z,s=s,y=y,beta=beta0,
                                  groupings=FALSE,
-                                 ci.method=ci.method, isSlaveMode=TRUE)
+                                 ci.method=ci.method,
+                                 custom.FUN=custom.FUN, isSlaveMode=TRUE)
       
       if(!withoutCdfs) {
         alphahat0[,i] <- ACE.info$alphahat
@@ -172,6 +180,10 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       }        
       
       ACE[,,i] <- ACE.info$ACE
+
+      if(hasCustomFun)
+        result[,,i] <- ACE.info$result
+      
       next
     }
     
@@ -180,6 +192,9 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
       alphahat0[,i] <- NA
       alphahat1[,i] <- NA
 
+      if(hasCustomFun)
+        result[,,i] <- NA
+      
       next
     }
     
@@ -246,18 +261,31 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
         FnAs1[j,i] <- stepfun(y1.uniq, c(0, Fas1))
     }
 
+    if(hasCustomFun) {
+      for(j in seq_along(beta0)) {
+        for(k in seq_along(beta1)) {
+          result[j,k,i] <- custom.FUN(mu0=y0.mean, muhat0=mu0[j,i],
+                                      mu1=y1.mean, muhat1=mu1[k,i],
+                                      p0=p0, p1=p1)
+        }
+      }
+    }
+    
     ACE[,,i] <- outer(mu0[,i], mu1[,i], function(mu0, mu1) mu1 - mu0)
   }
   
   if(withoutCdfs)
-    return(list(ACE=ACE))
+    return(c(list(ACE=ACE),
+             if(hasCustomFun) list(result=result)))
 
   cdfs<-list(beta0=beta0, alphahat0=alphahat0, Fas0=FnAs0,
              beta1=beta1, alphahat1=alphahat1, Fas1=FnAs1,
              phi=phi, Pi=Pi, psi=psi)
 
   if(withoutCi)
-    return(c(list(ACE=ACE), cdfs))
+    return(c(list(ACE=ACE),
+             if(hasCustomFun) list(result=result),
+             cdfs))
   
   if(!isSlaveMode) {
     ci.map <- vector('list', length(ci.type))
@@ -287,6 +315,10 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   
     ACE.ci <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
                     dimnames=ACE.ci.dimnames)
+
+    if(hasCustomFun && 'bootstrap' %in% ci.method) {
+      result.ci <- ACE.ci[,,,,"bootstrap", drop=FALSE]
+    }
   }
   
   ACE.var.dim <- c(ACE.dim, length(ci.method))
@@ -301,6 +333,11 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   ACE.p.dimnames <- c(ACE.dimnames, list(test=names.test, ci.method=ci.method))
   
   ACE.p <- array(numeric(ACE.p.length), dim=ACE.p.dim, dimnames=ACE.p.dimnames)
+
+  if(hasCustomFun && 'bootstrap' %in% ci.method) {
+    result.var <- ACE.var[,,,"bootstrap", drop=FALSE]
+    result.p <- ACE.p[,,,,"bootstrap", drop=FALSE]
+  }
   
   ## run bootstrap method
   if(any(ci.method == "analytic")) {
@@ -403,13 +440,20 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
   if(any(ci.method == "bootstrap")) {
     if(verbose) cat("running Bootstrap")
     ACE.list <- array(dim=c(ACE.dim,N.boot))
+    if(hasCustomFun)
+      result.list <- ACE.list
     
     for(i in seq_len(N.boot)) {
       new.index <- sample(seq_len(N), N, replace=TRUE)
-      ACE.list[,,,i] <- Recall(z=z[new.index],s=s[new.index],y=y[new.index],
-                               beta0=beta0, beta1=beta1, psi=psi,
-                               groupings=FALSE,
-                               ci.method=NULL, isSlaveMode=TRUE)$ACE
+      ans <- Recall(z=z[new.index],s=s[new.index],y=y[new.index],
+                    beta0=beta0, beta1=beta1, psi=psi,
+                    groupings=FALSE, ci.method=NULL,
+                    custom.FUN=custom.FUN, isSlaveMode=TRUE)
+      ACE.list[,,,i] <- ans$ACE
+
+      if(hasCustomFun)
+        result.list[,,,i] <- ans$result
+      
       if(verbose) cat(".")
     }
 
@@ -429,14 +473,34 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
 
           if(twoSidedTest)
             ACE.p[i,j,k,'twoSided', 'bootstrap'] <- 2 * min(lower, upper)
+
+          if(hasCustomFun) {
+            result.ci[i,j,k,,'bootstrap'] <- quantile(result.list[i,j,k,], probs=ci.probs)
+            result.var[i,j,k,'bootstrap'] <- var(result.list[i,j,k,])
+            lower <- mean(result.list[i,j,k,] > 0)
+            upper <- mean(result.list[i,j,k,] < 0)
+
+            if(upperTest)
+              result.p[i,j,k,'upper','bootstrap'] <- upper
+
+            if(lowerTest)
+              result.p[i,j,k,'lower','bootstrap'] <- lower
+
+            if(twoSidedTest)
+              result.p[i,j,k,'twoSided', 'bootstrap'] <- 2 * min(lower, upper)
+          }
         }
       }
     }
     if(verbose) cat("\n")
   }
 
-  return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var, ACE.p=ACE.p,
-                          ci.map=ci.map),
+  return(structure(c(list(ACE=ACE, ACE.ci=ACE.ci, ACE.var=ACE.var, ACE.p=ACE.p),
+                     if(hasCustomFun) list(result=result),
+                     if(hasCustomFun && 'bootstrap' %in% ci.method)
+                         list(result.ci=result.ci, result.var=result.var,
+                              result.p=result.p),
+                     list(ci.map=ci.map),
                      cdfs),
                    class=c("sensitivity.2.0d", "sensitivity.0d", "sensitivity"),
                    N.boot=N.boot,
