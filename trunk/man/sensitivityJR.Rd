@@ -86,7 +86,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
   }
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
-    by optimise to estimate alpha.
+    by optimise to estimate \eqn{\alpha}.
   }
   \item{lowerTest}{
     logical.  Return the lower one sided p value for the ACE. Defaults
@@ -116,7 +116,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
   potential outcomes of all subjects are unaffected by treatment
   assignment of other subjects) and ignorable (i.e., random) treatment
   assignment.  ACE is identified by assuming values for the sensitivity
-  parameters beta0, beta1, and one of the parameters phi, psi, or Pi.
+  parameters beta0, beta1, and one of the parameters \code{phi}, \code{psi}, or \code{Pi}.
   The sensitivity parameters \code{beta0} and \code{beta1} have a log-odds ratio
   interpretation (see help for \code{\link{sensitivityGBH}}).
   
@@ -154,7 +154,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     vector; \code{beta0} values used.
   }
   \item{alphahat0}{
-    vector; estimated alpha values for the first group.
+    vector; estimated \eqn{\alpha} values for the first group.
   }
   \item{Fas0}{
     function; estimator for the distribution function of \var{y0} in
@@ -164,7 +164,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     vector; \code{beta1} values used.
   }
   \item{alphahat1}{
-    vector; estimated alpha values for the second group.
+    vector; estimated \eqn{\alpha} values for the second group.
   }
   \item{Fas1}{
     function; estimator for the distribution function of \var{y1} in

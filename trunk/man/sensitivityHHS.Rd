@@ -93,10 +93,9 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
     to \code{TRUE}
   }
   \item{method}{
-    character vector; type of test statstics calcualted by
-    function. Can be or more of \dQuote{ACE}, \dQuote{T1}, or
-    \dQuote{T2}. Defaults to \code{"ACE"}. Currently methods \dQuote{T1}
-    and \dQuote{T2} are unimplemented.
+    character vector; type of test statstic calculated. Can be one or
+    more of \dQuote{ACE}, \dQuote{T1}, or \dQuote{T2}. Defaults to
+    \code{"ACE"}.
   }
   \item{isSlaveMode}{
     logical; Internal Use only. Used in recursion.
@@ -118,7 +117,7 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
   an object of class \code{sensitivity2d}.
   
   \item{ACE}{
-    \eqn{ACE=E(Y(\var{g1})-Y(\var{g0})|S(\var{g1})=S(\var{g0})=selection)}.
+    \eqn{ACE=E(Y(\var{g1})-Y(\var{g0})|S(\var{g1})=S(\var{g0})=\code{selection})}.
     Vector of the estimated ACE values at the specified bounds. Only
     exists if \code{method} includes \dQuote{ACE}.
   }
@@ -141,15 +140,15 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
     function; estimator for the empirical distribution function values
     for \var{y0} in the first group in the always selected principal
     stratum at the bounds.
-    \eqn{Pr(Y(\var{g0}) \le \var{y0}|S(\var{g0})=S(\var{g1})=selection)}{%
-      Pr(Y(\var{g0}) <= y0|S(\var{g0}) = S(\var{g1}) = selection)}
+    \eqn{Pr(Y(\var{g0}) \le \var{y0}|S(\var{g0})=S(\var{g1})=\code{selection})}{%
+      Pr(Y(\var{g0}) <= y0|S(\var{g0}) = S(\var{g1}) = \code{selection})}
   }
   \item{Fas1}{
     function; estimator for the empirical distribution function values for
     \var{y1} in the second group in the always selected principal
     stratum at the bounds.
-    \eqn{Pr(Y(\var{g1}) \le \var{y1}|S(\var{g0})=S(\var{g1})=selection)}{%
-      Pr(Y(\var{g1}) <= \var{y1}|S(\var{g0}) = S(\var{g1}) = selection)}
+    \eqn{Pr(Y(\var{g1}) \le \var{y1}|S(\var{g0})=S(\var{g1})=\code{selection})}{%
+      Pr(Y(\var{g1}) <= \var{y1}|S(\var{g0}) = S(\var{g1}) = \code{selection})}
   }
 }
 \references{

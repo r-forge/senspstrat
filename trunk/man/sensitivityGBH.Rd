@@ -38,8 +38,8 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   \item{groupings}{
     vector of two elements \code{c(\var{g0},\var{g1})}; describes the
     possible group values. The first element \var{g0} being the value of
-    \code{z} the delineates the first group, the last element \var{g1}
-    being the value of \code{z} which delineates the second group.
+    \code{z} that delineates the first group, the last element \var{g1}
+    being the value of \code{z} that delineates the second group.
   }
   \item{empty.principal.stratum}{
     vector of two elements \code{c(\var{s0},\var{s1})}; describes the \code{s}
@@ -80,7 +80,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   }
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
-    by optimise to estimate \eqn{\alpha} in for alphahat.
+    by \code{\link{optimise}} to estimate \eqn{\alpha}.
   }
   \item{lowerTest}{
     logical.  Return the lower one sided p value for returned tests. Defaults
@@ -95,11 +95,10 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     to \code{TRUE}
   }
   \item{method}{
-    character vector; type of test statstics calcualted by
-    function. Can be or more of \dQuote{ACE}, \dQuote{T1}, or
-    \dQuote{T2}. Defaults to \code{"ACE"}.  Methods \dQuote{T1}
-    and \dQuote{T2} are unimplemented if \code{ci.method} includes
-    \dQuote{analytic}.
+    character vector; type of test statstic calculated. Can be one or more
+    of \dQuote{ACE}, \dQuote{T1}, or \dQuote{T2}. Defaults to
+    \code{"ACE"}.  Methods \dQuote{T1} and \dQuote{T2} are not implemented
+    if \code{ci.method} includes \dQuote{analytic}.
   }
   \item{isSlaveMode}{
     logical.  Internal Use only. Used in recursion.
@@ -115,18 +114,19 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   empty).  ACE is identified by assuming a value of the sensitivity
   parameter beta, where \eqn{e^{\beta}}{exp(\beta)} has an odds ratio interpretation:
 
-  If \eqn{\code{empty.principal.stratum}=c(S(\var{g0})=\samp{not selected}, S(\var{g1})=\samp{selected})} then
+  If \eqn{\code{empty.principal.stratum}=c(S(\var{g0})=not\ selected, S(\var{g1})=selected)} then
   given selected if assigned \var{g0}, the odds of being selected if assigned
   \var{g1} multiplicatively increase \eqn{e^{\beta}}{exp(\beta)} for
   every 1-unit increase in \eqn{Y(\var{g0})}.
   
-  If \code{empty.principal.stratum}=c(S(\var{g0})==selected, S(\var{g1})==not
-  selected) then given selected if assigned \var{g1}, the odds of being
-  selected if assigned \var{g0} multiplicatively increase
+  If \eqn{\code{empty.principal.stratum}=c(S(\var{g0})=selected,
+  S(\var{g1})=not\ selected)} then given selected if assigned \var{g1}, the odds of being selected if assigned \var{g0} multiplicatively increase
   \eqn{e^{\beta}}{exp(\beta)} for every 1-unit increase in \eqn{Y(\var{g1})}.
 
   Specifying \code{beta}=\code{-Inf} or \code{beta}=\code{Inf} calls
   \code{\link{sensitivityHHS}}.
+
+  T1 ans T2 are rank-based analogs of ACE. See <REF TBD>.
 }
 \value{
   an object of class \code{sensitivity2d}.
@@ -157,17 +157,6 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \code{beta} values. Only exists if \code{method} includes
     \dQuote{T1}.
   }
-  \item{T1.ci}{
-    array; confidence interval of T1 determined by
-    quantiles of bootstrap if \code{ci.method} includes
-    \dQuote{bootstrap}.  Otherwise calculated using analytic variance
-    with large sample normal approximation. Only exists if
-    \code{method} includes \dQuote{T1}.
-  }
-  \item{T1.var}{
-    vector; estimated variance of T1.  Only exists if
-    \code{method} includes \dQuote{T1}.
-  }
   \item{T1.p}{
     vector; estimated p value of T1.  Only exists if
     \code{method} includes \dQuote{T1}.
@@ -176,17 +165,6 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     vector; Vector of the estimated T2 statistic for specified
     \code{beta} values. Only exists if \code{method} includes
     \dQuote{T2}.
-  }
-  \item{T2.ci}{
-    array; confidence interval of T2 determined by
-    quantiles of bootstrap if \code{ci.method} includes
-    \dQuote{bootstrap}.  Otherwise calculated using analytic variance
-    with large sample normal approximation. Only exists if
-    \code{method} includes \dQuote{T2}.
-  }
-  \item{T2.var}{
-    vector; estimated variance of T2.  Only exists if
-    \code{method} includes \dQuote{T2}.
   }
   \item{T2.p}{
     vector; estimated p value of T2.  Only exists if
@@ -201,12 +179,14 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   \item{Fas0}{
     function; estimator for the empirical distribution function values
     for \var{y0} in the first group in the always selected principal
-    stratum. Pr(Y(g0) <= y0|S(g0)=S(g1)=\samp{selection}; beta)
+    stratum. \eqn{Pr(Y(\var{g0}) \le
+    \var{y0}|S(\var{g0})=S(\var{g1})=\code{selection};
+    \beta)}{Pr(Y(\var{g0}) <= \var{y0}|S(\var{g1}) = \code{selection}; \beta)}
   }
   \item{Fas1}{
     function; estimator for the empirical distribution function values
     for \var{y1} in the second group in the always selected principal
-    stratum.  Pr(Y(g1) <= y1|S(g0)=S(g1)=\samp{selection}; beta)
+    stratum.  \eqn{Pr(Y(\var{g1}) \le \var{y1}|S(\var{g0})=S(\var{g1})=\code{selection}; \beta)}{Pr(Y(\var{g1}) <= \var{y1}|S(\var{g0}) = S(\var{g1}) = \code{selection}; \beta)}
   }
 }
 \references{
