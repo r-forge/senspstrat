@@ -71,8 +71,8 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     \code{"twoSided"}.
   }
   \item{custom.FUN}{
-    function; function to calculate custom result. \code{mu0}, \code{muhat0},
-    \code{mu1}, \code{muhat1}, \code{p0}, \code{p1} are available to be used as
+    function; function to calculate custom result. \code{mu0},
+    \code{mu1}, \code{p0}, \code{p1} are available to be used as
     arguments in the custom function.  The custom function must return a
     single value.
   }
@@ -229,7 +229,7 @@ ansJR<-with(vaccine.trial,
                     beta1=c(-1,-.75,-.5,-.25,0,.25,.5,.75,1),
                     phi=c(0.95,0.90,0.80), selection="infected",
                     groupings=c("placebo","vaccine"),
-                    custom.FUN=function(muhat0, muhat1, ...) muhat1 - muhat0,
+                    custom.FUN=function(mu0, mu1, ...) mu1 - mu0,
                     upperTest=TRUE, lowerTest=TRUE, twoSidedTest=TRUE,
                     N.boot=100)
          )

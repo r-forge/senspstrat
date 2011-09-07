@@ -324,7 +324,7 @@
   if(!missing(ci.type) && any(fail <- pmatch(ci.type, c('uppper','lower','twoSided'), nomatch=0, duplicates.ok=TRUE) == 0))
     ErrMsg <- c(ErrMsg,
                 paste("'ci.type' values ",
-                      paste(dQuote(ci.type(which(fail))), collapse=', '),
+                      paste(dQuote(ci.type[which(fail)]), collapse=', '),
                       " are not valid 'ci.type' values"))
   return(ErrMsg)
 }

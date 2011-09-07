@@ -65,8 +65,8 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \code{"twoSided"}.
   }    
   \item{custom.FUN}{
-    function; function to calculate custom result. \code{mu0}, \code{muhat0},
-    \code{mu1}, \code{muhat1}, \code{p0}, \code{p1} are available to be used as
+    function; function to calculate custom result. \code{mu0},
+    \code{mu1}, \code{p0}, \code{p1} are available to be used as
     arguments in the custom function.  The custom function must return a
     single value.
   }
@@ -247,7 +247,7 @@ ans<-with(vaccine.trial,
                     groupings=c("placebo","vaccine"),
                     empty.principal.stratum=c("not infected","infected"),
                     ci.method="bootstrap",
-                    custom.FUN=function(muhat0, muhat1, ...) muhat1 - muhat0,
+                    custom.FUN=function(mu0, mu1, ...) mu1 - mu0,
                     N.boot=100, method=c("ACE", "T1", "T2"),
                     upperTest=TRUE, lowerTest=TRUE, twoSidedTest=TRUE)
          )

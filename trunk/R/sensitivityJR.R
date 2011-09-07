@@ -264,9 +264,7 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
     if(hasCustomFun) {
       for(j in seq_along(beta0)) {
         for(k in seq_along(beta1)) {
-          result[j,k,i] <- custom.FUN(mu0=y0.mean, muhat0=mu0[j,i],
-                                      mu1=y1.mean, muhat1=mu1[k,i],
-                                      p0=p0, p1=p1)
+          result[j,k,i] <- custom.FUN(mu0=mu0[j,i], mu1=mu1[k,i], p0=p0, p1=p1)
         }
       }
     }

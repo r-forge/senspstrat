@@ -136,8 +136,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   y1.uniq <- knots(Fas1)
   dFas1 <- diff(c(0, Fas1(y1.uniq)))
 
-  mu0 <- mean(y[z0.s1], na.rm=TRUE)
-  mu1 <- mean(y[z1.s1], na.rm=TRUE)
+  y0.mean <- mean(y[z0.s1], na.rm=TRUE)
+  y1.mean <- mean(y[z1.s1], na.rm=TRUE)
   
   Rmu1 <- mean(R[z.s1])
 
@@ -149,7 +149,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   }
 
   calc.mu0AndAlpha <- function(betas, y, R, dF, dR, C, y0, y1, Rmu1,
-                                  n0, n1, mu0, interval, method, GroupReverse) {
+                                  n0, n1, y0.mean, interval, method, GroupReverse) {
     method["ACE"] <- TRUE
     resp <- vector(mode="list", length=sum(method) + 2L + !is.null(custom.FUN))
     names(resp) <- c("alphahat", "dFas", names(method)[method],
@@ -166,7 +166,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     
     resp$dFas <- dF*w/C
 
-    resp$muhat0 <- colSums(y*resp$dFas)
+    resp$mu0 <- colSums(y*resp$dFas)
     if(method["T1"]) {
       Rmu0 <- colSums(R*(dR0*w/C))
       if(GroupReverse)
@@ -178,7 +178,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     }
 
     if(method["T2"]) {
-      Y0star <- outer(y, mu0 - resp$muhat0,
+      Y0star <- outer(y, y0.mean - resp$mu0,
                       FUN=`-`)[rep.int(seq_along(y),
                                        times=tabulate(match(y0, y))),,
                                drop=FALSE]
@@ -205,6 +205,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   
   alphahat <- numeric(length(beta))
   ACE.dim <- length(beta)
+  ACE.length <- prod(ACE.dim)
   ACE.dimnames <- format(beta, trim=TRUE)
 
   temp <- numeric(ACE.dim)
@@ -228,13 +229,13 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
   if(doFinite) {
     temp <- calc.mu0AndAlpha(finiteBeta, y=y0.uniq, R=R0.uniq, dF=dF0, dR=dR0,
                              C=RR, y0=y0, y1=y1, Rmu1=Rmu1, n0=n0, n1=n1,
-                             mu0=mu0, interval=interval, method=method,
+                             y0.mean=y0.mean, interval=interval, method=method,
                              GroupReverse=GroupReverse)
     
     alphahat[finiteIndex] <- temp$alphahat
     dFas0 <- temp$dFas
 
-    muhat0 <- temp$muhat0
+    mu0 <- temp$mu0
 
     if(method["T1"])
       T1[finiteIndex] <- temp$T1
@@ -254,16 +255,14 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
 
     if(method["ACE"]) {
       if(GroupReverse) {
-        ACE[finiteIndex] <- muhat0 - mu1
+        ACE[finiteIndex] <- mu0 - y1.mean
       } else {
-        ACE[finiteIndex] <- mu1 - muhat0
+        ACE[finiteIndex] <- y1.mean - mu0
       }
     }
 
     if(hasCustomFun)
-      result[finiteIndex] <- custom.FUN(mu0=mu0, muhat0=muhat0,
-                                       mu1=mu1, muhat1=mu1,
-                                       p0=p0, p1=p1)
+      result[finiteIndex] <- custom.FUN(mu0=mu0, mu1=y1.mean, p0=p0, p1=p1)
   }
 
   if(doInfinite) {
@@ -428,8 +427,8 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
             rbind((p0-s)*(1-z),
                   (p1-s)*z,
                   s*(1/(exp(-beta[i]*y-alphahat[i])+1)-p1/p0)*(1-z),
-                  s*(muhat0[i]-p0*y/(p1*(exp(-beta[i]*y-alphahat[i])+1)))*(1-z),
-                  s*(mu1-y)*z)
+                  s*(mu0[i]-p0*y/(p1*(exp(-beta[i]*y-alphahat[i])+1)))*(1-z),
+                  s*(y1.mean-y)*z)
           
           Omega <- Omega/N
           Omega <- .foldUpperTri(Omega)
@@ -552,7 +551,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     ## Done with index and current.fun
     rm(index, current.fun)
 
-    N.bootActual <- length(Resp.list) %/% length(returned.vals)
+    N.bootActual <- length(Resp.list) %/% (length(returned.vals) * ACE.length)
 
     method.grid <- expand.grid(beta=beta, method=returned.vals)
 

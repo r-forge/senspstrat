@@ -42,14 +42,14 @@
   Fn0 <- ecdf(y0)
   Fn1 <- ecdf(y1)
 
-  mu0 <- mean(y0)
-  mu1 <- mean(y1)
+  y0.mean <- mean(y0)
+  y1.mean <- mean(y1)
 
   c(list(withoutCdfs=withoutCdfs, GroupReverse=GroupReverse,
          z=z, s=s, y=y, z0.s1=z0.s1, z1.s1=z1.s1, N=N, R1=R[z[s]],
          N0=N0, N1=N1, n0=n0, n1=n1, p0=p0, p1=p1, RR=RR, VE=VE, Fn0=Fn0,
          Fn1=Fn1, y0=y0, y1=y1, method=method, R0.uniq=sort(unique(R[!z[s]])),
-         mu0=mu0, mu1=mu1, custom.FUN=custom.FUN),
+         y0.mean=y0.mean, y1.mean=y1.mean, custom.FUN=custom.FUN),
     eval(expression(list(y0.uniq=x, F0=y)), envir=environment(Fn0)),
     eval(expression(list(y1.uniq=x, F1=y)), envir=environment(Fn1)))
 }
@@ -66,11 +66,11 @@
   dFas0 <- diff(c(0L, Fas0))
 
   if(obj$method['ACE'] || obj$method['T2']) {
-    muhat0 <- sum(obj$y0.uniq * dFas0)
+    mu0 <- sum(obj$y0.uniq * dFas0)
   }
   
   if(obj$method['ACE']) {
-    ACE <- .CalcDeltaMu(mu0=muhat0, mu1=obj$mu1, GroupReverse=obj$GroupReverse)
+    ACE <- .CalcDeltaMu(mu0=mu0, mu1=obj$y1.mean, GroupReverse=obj$GroupReverse)
   }
 
   if(obj$method['T1']) {
@@ -82,7 +82,7 @@
 
   if(obj$method['T2']) {
     indx <- rep(c(FALSE, TRUE), times=c(obj$n0, obj$n1))
-    ystar0 <- obj$y0 - obj$mu0 - muhat0
+    ystar0 <- obj$y0 - obj$y0.mean - mu0
     ystar1 <- obj$y1
 
     Rstar <- rank(c(ystar0,ystar1))
@@ -94,8 +94,7 @@
   FnAs0 <- stepfun(x=obj$y0.uniq, y=c(0, Fas0))
   
   if(!is.null(obj$custom.FUN)) {
-    result <- obj$custom.FUN(mu0=obj$mu0, muhat0=muhat0,
-                             mu1=obj$mu1, muhat1=obj$mu1,
+    result <- obj$custom.FUN(mu0=mu0, mu1=obj$y1.mean,
                              p0=obj$p0, p1=obj$p1)
   }
   
@@ -472,7 +471,7 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                                custom.FUN=custom.FUN,
                                current.fun=sys.function(), FUN=bootACECalc))
 
-    N.bootActual <- length(Resp.list) %/% length(returned.vals)
+    N.bootActual <- length(Resp.list) %/% (length(returned.vals) * ACE.length)
     method.grid <- expand.grid(bound=bound, method=returned.vals)
     ans <- sapply(split(Resp.list, rep.int(interaction(method.grid),
                                            times=N.bootActual)),
@@ -482,7 +481,7 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                       mean(Resp.vals < 0),
                       quantile(Resp.vals, probs=probs)),
                   probs=ci.probs)
-    ans.ci <- t(ans[c(-1,-2,-3),])
+    ans.ci <- t(ans[c(-1,-2,-3),, drop=FALSE])
     ans.var <- ans[1,]
     ans.p <- cbind(if(test['upper']) ans[3,],
                    if(test['lower']) ans[2,],
