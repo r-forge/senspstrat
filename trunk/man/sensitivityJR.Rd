@@ -30,11 +30,11 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     vector; outcome values.  Can be \code{NA} for unselected records.
   }
   \item{beta0}{
-    vector; values of the sensitivity parameter linking outcome in group
+    vector; values of the sensitivity parameter \var{\eqn{\beta}0} linking outcome in group
     \var{g0} with selection if assigned group \var{g1}.
   }
   \item{beta1}{
-    vector; values of the sensitivity parameter linking outcome in group
+    vector; values of the sensitivity parameter \var{\eqn{\beta}1} linking outcome in group
     \var{g1} with selection if assigned group \var{g0}.
   }
   \item{phi, Pi, psi}{
@@ -45,7 +45,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     selected principal stratum (\eqn{Pr(S(\var{g0}) = S(\var{g1}) =
       selected)}). \code{phi} is the probability of selection in group
     \var{g0} given selection in group \var{g1}
-    (\eqn{Pr(S(\var{g0}) = 1 | S(\var{g1}) = 1)}).
+    (\eqn{Pr(S(\var{g0}) = 1|S(\var{g1}) = 1)}).
   }
   \item{selection}{
     The value of \code{s} indicating selection.
@@ -65,16 +65,20 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     \dQuote{bootstrap}. Defaults to \code{c("analytic","bootstrap")}
   }
   \item{ci.type}{
-    character vector; type of confidence interval that the corisponding
-    \code{ci} element is refering to.  Can be \code{"upper"},
-    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    character vector; type of confidence interval that the corresponding
+    \code{ci} element is referring to.  Can be \dQuote{upper},
+    \dQuote{lower}, or \dQuote{twoSided}.  Defaults to
     \code{"twoSided"}.
   }
   \item{custom.FUN}{
     function; function to calculate custom result. \code{mu0},
     \code{mu1}, \code{p0}, \code{p1} are available to be used as
-    arguments in the custom function.  The custom function must return a
-    single value.
+    arguments in the custom function, where
+    \eqn{\code{mu0} = E(Y(\var{g0})|S(\var{g0}) = S(\var{g1}) = selected)},
+    \eqn{\code{mu1} = E(Y(\var{g1})|S(\var{g0}) = S(\var{g1}) = selected)},
+    \eqn{\code{p0} = P(S(\var{g0}) = selected)}, and
+    \eqn{\code{p1} = P(S(\var{g1}) = selected)}.  The custom function
+    must return a single value.
   }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
@@ -85,19 +89,19 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     \code{ci.method} includes \dQuote{bootstrap}.
   }
   \item{interval}{
-    numeric vector of length 2. Controls the range limits used to
-    by optimise to estimate \eqn{\alpha}.
+    numeric vector of length 2. Controls the range limits used
+    by optimize to estimate \var{\eqn{\alpha}0} and \var{\eqn{\alpha}1}.
   }
   \item{lowerTest}{
-    logical.  Return the lower one sided p value for the ACE. Defaults
+    logical.  Return the lower one sided p-value for the ACE. Defaults
     to \code{FALSE}
   }
   \item{upperTest}{
-    logical.  Return the upper one sided p value for the ACE. Defaults
+    logical.  Return the upper one sided p-value for the ACE. Defaults
     to \code{FALSE}
   }
   \item{twoSidedTest}{
-    logical.  Return a two sided p value for the ACE. Defaults
+    logical.  Return a two sided p-value for the ACE. Defaults
     to \code{TRUE}
   }
   \item{verbose}{
@@ -116,7 +120,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
   potential outcomes of all subjects are unaffected by treatment
   assignment of other subjects) and ignorable (i.e., random) treatment
   assignment.  ACE is identified by assuming values for the sensitivity
-  parameters beta0, beta1, and one of the parameters \code{phi}, \code{psi}, or \code{Pi}.
+  parameters \code{beta0}, \code{beta1}, and one of the parameters \code{phi}, \code{psi}, or \code{Pi}.
   The sensitivity parameters \code{beta0} and \code{beta1} have a log-odds ratio
   interpretation (see help for \code{\link{sensitivityGBH}}).
   
@@ -148,10 +152,10 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     element.
   }
   \item{ACE.p}{
-    vector; estimated p value of ACE.
+    vector; estimated p-value of ACE.
   }
   \item{beta0}{
-    vector; \code{beta0} values used.
+    vector; \eqn{\beta} values used for the first group.
   }
   \item{alphahat0}{
     vector; estimated \eqn{\alpha} values for the first group.
@@ -161,7 +165,7 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     the first group in the always selected stratum.
   }
   \item{beta1}{
-    vector; \code{beta1} values used.
+    vector; \eqn{\beta} values used for the second group.
   }
   \item{alphahat1}{
     vector; estimated \eqn{\alpha} values for the second group.
@@ -171,28 +175,32 @@ sensitivityJR(z, s, y, beta0, beta1, phi, Pi, psi,
     the second group in the always selected stratum.
   }
   \item{phi}{
-    vector; \code{phi} values used.
+    vector; \eqn{phi} values used.
   }
   \item{Pi}{
-    vector; \code{Pi} values used.
+    vector; \eqn{Pi} values used.
   }
   \item{psi}{
-    vector; \code{psi} values used.
+    vector; \eqn{psi} values used.
+  }
+  \item{ci.map}{
+    list; mapping of confidence interval to quantile probability.  Use
+    numbers contained within as indices to the \code{SCE.ci} element.
   }
 }
 \references{
-  Jemiai Y (2005), "Semiparametric Methods for Inferring Treatment
+  Jemiai Y (2005), \dQuote{Semiparametric Methods for Inferring Treatment
   Effects on Outcomes Defined Only if a Post-Randomization Event
-  Occurs," unpublished doctoral dissertation under the supervision of
+  Occurs,} unpublished doctoral dissertation under the supervision of
   A. Rotnitzky, Harvard School of Public Health, Dept. of Biostatistics.
 
-  Shepherd BE, Redman MW, Ankerst DP (2008), "Does Finasteride affect the
-  severity of prostate cancer? A causal sensitivity analysis," Journal
+  Shepherd BE, Redman MW, Ankerst DP (2008), \dQuote{Does Finasteride affect the
+  severity of prostate cancer? A causal sensitivity analysis,} Journal
   of the American Statistical Association 2008, 484, 1392-1404.
   
-  Shepherd BE, Gilbert PB, and Dupont CT, "Sensitivity analyses
+  Shepherd BE, Gilbert PB, and Dupont CT, \dQuote{Sensitivity analyses
   comparing time-to-event outcomes only existing in a subset selected
-  postrandomization and relaxing monotonicity," Biometrics, in press.
+  postrandomization and relaxing monotonicity,} Biometrics, in press.
 }
 \author{
   Bryan E. Shepherd \cr

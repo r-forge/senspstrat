@@ -59,16 +59,20 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \dQuote{bootstrap}. Defaults to \code{c("analytic","bootstrap")}
   }
   \item{ci.type}{
-    character vector; type of confidence interval that the corisponding
-    \code{ci} element is refering to.  Can be \code{"upper"},
-    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    character vector; type of confidence interval that the corresponding
+    \code{ci} element is referring to.  Can be \dQuote{upper},
+    \dQuote{lower}, or \dQuote{twoSided}.  Defaults to
     \code{"twoSided"}.
-  }    
+  }
   \item{custom.FUN}{
     function; function to calculate custom result. \code{mu0},
     \code{mu1}, \code{p0}, \code{p1} are available to be used as
-    arguments in the custom function.  The custom function must return a
-    single value.
+    arguments in the custom function, where
+    \eqn{\code{mu0} = E(Y(\var{g0})|S(\var{g0}) = S(\var{g1}) = selected)},
+    \eqn{\code{mu1} = E(Y(\var{g1})|S(\var{g0}) = S(\var{g1}) = selected)},
+    \eqn{\code{p0} = P(S(\var{g0}) = selected)}, and
+    \eqn{\code{p1} = P(S(\var{g1}) = selected)}. The custom function
+    must return a single value.
   }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
@@ -79,23 +83,23 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \code{ci.method} includes \dQuote{bootstrap}.
   }
   \item{interval}{
-    numeric vector of length 2. Controls the range limits used to
-    by \code{\link{optimise}} to estimate \eqn{\alpha}.
+    numeric vector of length 2. Controls the range limits used
+    by \code{\link{optimize}} to estimate \eqn{\alpha}.
   }
   \item{lowerTest}{
-    logical.  Return the lower one sided p value for returned tests. Defaults
+    logical.  Return the lower one sided p-value for returned tests. Defaults
     to \code{FALSE}
   }
   \item{upperTest}{
-    logical.  Return the upper one sided p value for returned tests. Defaults
+    logical.  Return the upper one sided p-value for returned tests. Defaults
     to \code{FALSE}
   }
   \item{twoSidedTest}{
-    logical.  Return a two sided p value for returned tests. Defaults
+    logical.  Return a two sided p-value for returned tests. Defaults
     to \code{TRUE}
   }
   \item{method}{
-    character vector; type of test statstic calculated. Can be one or more
+    character vector; type of test statistic calculated. Can be one or more
     of \dQuote{ACE}, \dQuote{T1}, or \dQuote{T2}. Defaults to
     \code{"ACE"}.  Methods \dQuote{T1} and \dQuote{T2} are not implemented
     if \code{ci.method} includes \dQuote{analytic}.
@@ -126,7 +130,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   Specifying \code{beta}=\code{-Inf} or \code{beta}=\code{Inf} calls
   \code{\link{sensitivityHHS}}.
 
-  T1 ans T2 are rank-based analogs of ACE. See <REF TBD>.
+  T1 and T2 are rank-based analogs of ACE. See <REF TBD>.
 }
 \value{
   an object of class \code{sensitivity2d}.
@@ -149,7 +153,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \code{method} includes \dQuote{ACE}.
   }
   \item{ACE.p}{
-    vector; estimated p value of ACE.  Only exists if
+    vector; estimated p-value of ACE.  Only exists if
     \code{method} includes \dQuote{ACE}.
   }
   \item{T1}{
@@ -158,7 +162,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \dQuote{T1}.
   }
   \item{T1.p}{
-    vector; estimated p value of T1.  Only exists if
+    vector; estimated p-value of T1.  Only exists if
     \code{method} includes \dQuote{T1}.
   }
   \item{T2}{
@@ -167,7 +171,7 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
     \dQuote{T2}.
   }
   \item{T2.p}{
-    vector; estimated p value of T2.  Only exists if
+    vector; estimated p-value of T2.  Only exists if
     \code{method} includes \dQuote{T2}.
   }
   \item{beta}{
@@ -190,9 +194,9 @@ sensitivityGBH(z, s, y, beta, selection, groupings,
   }
 }
 \references{
-  Gilbert PB, Bosch RJ, and Hudgens MG (2003), "Sensitivity Analysis for
+  Gilbert PB, Bosch RJ, and Hudgens MG (2003), \dQuote{Sensitivity Analysis for
   the Assessment of Causal Vaccine Effects of Viral Load in HIV Vaccine
-  Trials," Biometrics 59, 531-541.
+  Trials,} Biometrics 59, 531-541.
 }
 \author{
   Bryan E. Shepherd \cr

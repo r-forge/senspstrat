@@ -36,7 +36,7 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
     selection or censoring.
   }
   \item{beta}{
-    vector; values of the sensitivity parameter.  \code{Inf} and
+    vector; values of the sensitivity parameter \eqn{\beta}.  \code{Inf} and
     \code{-Inf} are acceptable.
   }
   \item{tau}{
@@ -78,9 +78,9 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
     \dQuote{bootstrap}. 
   }
   \item{ci.type}{
-    character vector; type of confidence interval that the corisponding
-    \code{ci} element is refering to.  Can be \code{"upper"},
-    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    character vector; type of confidence interval that the corresponding
+    \code{ci} element is referring to.  Can be \dQuote{upper},
+    \dQuote{lower}, or \dQuote{twoSided}.  Defaults to
     \code{"twoSided"}.
   }    
   \item{custom.FUN}{
@@ -99,22 +99,23 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
   }
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
-    by optimise to estimate \eqn{\alpha}.
+    by optimize to estimate \eqn{\alpha}.
   }
   \item{lowerTest}{
-    logical.  Return the lower one sided p value for SCE. Defaults
+    logical;  Return the lower one sided p-value for SCE. Defaults
     to \code{FALSE}
   }
   \item{upperTest}{
-    logical.  Return the upper one sided p value for SCE. Defaults
+    logical;  Return the upper one sided p-value for SCE. Defaults
     to \code{FALSE}
   }
   \item{twoSidedTest}{
-    logical.  Return a two sided p value for SCE. Defaults
+    logical;  Return a two sided p-value for SCE. Defaults
     to \code{TRUE}
   }
   \item{verbose}{
-    logical;  prints dots when bootstrapping to show that something is happening.
+    logical;  prints dots when bootstrapping to show that something is
+    happening.  Bootstrapping can take a long time.
   }
   \item{isSlaveMode}{
     logical.  Internal Use only. Used in recursion.
@@ -135,7 +136,8 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
   probability of selection if in the other treatment arm is assumed to be constant for
   for \eqn{T(\code{z})>\code{tau}}.  
   
-  SCE is computed at user specified time points.  
+  SCE is computed at user specified time points.
+  
   Specifying \code{beta}=\code{-Inf} or
   \code{beta}=\code{Inf} estimates the bounds for SCE.
 }
@@ -149,17 +151,17 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
   }
   \item{SCE.ci}{
     array; confidence interval of SCE
-    determined by \code{quantile} if using \code{ci.method} = 
+    determined by \code{quantile} if using \code{ci.method} includes 
     \dQuote{bootstrap}.  Otherwise calculated using analytic
-    variance with large sample normal approximation. Array dimentions the same as element \code{SCE}.
+    variance with large sample normal approximation. Array dimensions the same as element \code{SCE}.
   }
   \item{SCE.var}{
-    array; estimated variance of SCE.  Array dimentions the same as
+    array; estimated variance of SCE.  Array dimensions the same as
     element \code{SCE}.
   }
   \item{ci.map}{
-    list; mapping of confidence interval to quantile probablity.  Use
-    numbers contained within as indecies to the \code{SCE.ci} element.
+    list; mapping of confidence interval to quantile probability.  Use
+    numbers contained within as indices to the \code{SCE.ci} element.
   }
   \item{beta}{
     vector of user-specified \eqn{\beta} values
@@ -185,9 +187,9 @@ sensitivitySGL(z, s, d, y, v, beta, tau, time.points, selection, trigger,
   }
 }
 \references{
-  Shepherd BE, Gilbert PB, Lumley T (2007), "Sensitivity analyses
+  Shepherd BE, Gilbert PB, Lumley T (2007), \dQuote{Sensitivity analyses
   comparing time-to-event outcomes existing only in a subset selected
-  postrandomization," Journal of the American Statistical Association
+  postrandomization,} Journal of the American Statistical Association
   102, 573-582.
 }
 \author{

@@ -45,11 +45,11 @@
     the time point at which data to create the plot.
   }
   \item{display}{
-    character vector. Controlls which confidence interval to use plot.
+    character vector. Controls which confidence interval to use plot.
   }
   \item{ci.select}{
-    interger vector or \samp{all}.  Selects the confindence interval to
-     be ploted. If set to \samp{all} then all confindence intervals are
+    integer vector or \samp{all}.  Selects the confidence interval to
+     be ploted. If set to \samp{all} then all confidence intervals are
      plotted. Default value is 1.
    }
   \item{line.col}{
@@ -60,32 +60,32 @@
   }
   \item{analytic.col}{
     vector; the color of all of the analytic confidence interval
-    markings. Value are recycled if more confindence intervals are
+    markings. Value are recycled if more confidence intervals are
     selected then given color values.
   }
   \item{analytic.line.col}{
     vector;the color of all of the analytic confidence interval lines.
-    Value are recycled if more confindence intervals are selected then
+    Value are recycled if more confidence intervals are selected then
     given color values.
   }
   \item{analytic.point.col}{
     vector; the color of all of the analytic confidence interval
-    infinity points.  Value are recycled if more confindence intervals
+    infinity points.  Value are recycled if more confidence intervals
     are selected then given color values.
   }
   \item{bootstrap.col}{
     vector; the color of all of the bootstrap confidence interval
-     markings.  Value are recycled if more confindence intervals are
+     markings.  Value are recycled if more confidence intervals are
      selected then given color values.
   }
   \item{bootstrap.line.col}{
     vector; the color of all of the bootstrap confidence interval
-     lines.  Value are recycled if more confindence intervals are
+     lines.  Value are recycled if more confidence intervals are
      selected then given color values.
   }
   \item{bootstrap.point.col}{
     vector; the color of all of the bootstrap confidence interval
-     infinity points.  Value are recycled if more confindence intervals
+     infinity points.  Value are recycled if more confidence intervals
      are selected then given color values.
   }
   \item{xlim, ylim, xlab, ylab, col, panel.last, type}{
@@ -125,7 +125,7 @@ ans<-with(vaccine.trial,
                     groupings=c("placebo","vaccine"),
                     empty.principal.stratum=c("not infected","infected"),
                     ci.method="bootstrap", ci=c(0.95, 0.9, 0.9),
-                    ci.type=c('twoSided', 'upper', 'lower'),
+                    ci.type=c("twoSided", "upper", "lower"),
                     custom.FUN=function(mu0, mu1, ...) mu1 - mu0,
                     N.boot=100, method=c("ACE", "T1", "T2"),
                     upperTest=TRUE, lowerTest=TRUE, twoSidedTest=TRUE)

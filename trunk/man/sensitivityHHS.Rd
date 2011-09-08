@@ -1,10 +1,10 @@
 \name{sensitivityHHS}
 \alias{sensitivityHHS}
 \title{
-  principal stratifictation sensitivity analysis using the HHS method.
+  principal stratification sensitivity analysis using the HHS method.
 }
 \description{
-  Performs a principal stratifictation sensitivity analysis using the
+  Performs a principal stratification sensitivity analysis using the
   method described in Hudgens, Hoering, and Self (2003).
 }
 \usage{
@@ -62,15 +62,19 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
   }
   \item{ci.type}{
     character vector; type of confidence interval that the corisponding
-    \code{ci} element is refering to.  Can be \code{"upper"},
-    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    \code{ci} element is referring to.  Can be \dQuote{upper},
+    \dQuote{lower}, or \dQuote{twoSided}.  Defaults to
     \code{"twoSided"}.
   }    
   \item{custom.FUN}{
     function; function to calculate custom result. \code{mu0},
     \code{mu1}, \code{p0}, \code{p1} are available to be used as
-    arguments in the custom function.  The custom function must return a
-    single value.
+    arguments in the custom function, where
+    \eqn{\code{mu0} = E(Y(\var{g0})|S(\var{g0}) = S(\var{g1}) = selected)},
+    \eqn{\code{mu1} = E(Y(\var{g1})|S(\var{g0}) = S(\var{g1}) = selected)},
+    \eqn{\code{p0} = P(S(\var{g0}) = selected)}, and
+    \eqn{\code{p1} = P(S(\var{g1}) = selected)}.  The custom function
+    must return a single value.
   }
   \item{na.rm}{
     logical; indicates whether records that are invalid due to \code{NA}
@@ -81,19 +85,19 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
     \code{ci.method} includes \dQuote{bootstrap}.
   }
   \item{lowerTest}{
-    logical.  Return the lower one sided p value for returned tests. Defaults
+    logical.  Return the lower one sided p-value for returned tests. Defaults
     to \code{FALSE}
   }
   \item{upperTest}{
-    logical.  Return the upper one sided p value for returned tests. Defaults
+    logical.  Return the upper one sided p-value for returned tests. Defaults
     to \code{FALSE}
   }
   \item{twoSidedTest}{
-    logical.  Return a two sided p value for returned tests. Defaults
+    logical.  Return a two sided p-value for returned tests. Defaults
     to \code{TRUE}
   }
   \item{method}{
-    character vector; type of test statstic calculated. Can be one or
+    character vector; type of test statistic calculated. Can be one or
     more of \dQuote{ACE}, \dQuote{T1}, or \dQuote{T2}. Defaults to
     \code{"ACE"}.
   }
@@ -133,7 +137,7 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
     includes \dQuote{ACE}.
   }
   \item{ACE.p}{
-    vector; estimated p value of ACE.  Only exists if
+    vector; estimated p-value of ACE.  Only exists if
     \code{method} includes \dQuote{ACE}.
   }
   \item{Fas0}{
@@ -141,7 +145,7 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
     for \var{y0} in the first group in the always selected principal
     stratum at the bounds.
     \eqn{Pr(Y(\var{g0}) \le \var{y0}|S(\var{g0})=S(\var{g1})=\code{selection})}{%
-      Pr(Y(\var{g0}) <= y0|S(\var{g0}) = S(\var{g1}) = \code{selection})}
+      Pr(Y(\var{g0}) <= \var{y0}|S(\var{g0}) = S(\var{g1}) = \code{selection})}
   }
   \item{Fas1}{
     function; estimator for the empirical distribution function values for
@@ -152,8 +156,8 @@ sensitivityHHS(z, s, y, bound = c("upper", "lower"), selection,
   }
 }
 \references{
-  Hudgens MG, Hoering A, and Self SG (2003), "On the Analysis of Viral
-  Load Endpoints in HIV Vaccien Trials," Statistics in Medicine 22,
+  Hudgens MG, Hoering A, and Self SG (2003), \dQuote{On the Analysis of Viral
+  Load Endpoints in HIV Vaccine Trials,} Statistics in Medicine 22,
   2281-2298.
 }
 \author{

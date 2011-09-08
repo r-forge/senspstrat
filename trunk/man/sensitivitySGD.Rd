@@ -42,11 +42,11 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
     selection or censoring.
   }
   \item{beta0}{
-    vector; values of the sensitivity parameter \eqn{\beta} linking outcome in group
+    numeric vector; values of the sensitivity parameter \eqn{\beta} linking outcome in group
     \var{g0} with \code{selection} if assigned group \var{g1}.
   }
   \item{beta1}{
-    vector; values of the sensitivity parameter \eqn{\beta} linking outcome in group
+    numeric vector; values of the sensitivity parameter \eqn{\beta} linking outcome in group
     \var{g1} with \code{selection} if assigned group \var{g0}.
   }
   \item{phi, Pi, psi}{
@@ -54,9 +54,9 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
     \eqn{S(\var{g1})}.  Only one of the three parameters should be
     specified. \code{psi} is the log-odds ratio of selection.
     \code{Pi} is the probability of being in the always selected
-    principal stratum (\eqn{Pr(S(\var{g0})=S(\var{g1})=selected)}).
+    principal stratum (\eqn{Pr(S(\var{g0}) = S(\var{g1}) = selected)}).
     \code{phi} is the probability of selection in group \var{g0} given
-    selection in group \var{g1} (\eqn{Pr(S(\var{g0})=1|S(\var{g1})=1)}).
+    selection in group \var{g1} (\eqn{Pr(S(\var{g0}) = 1|S(\var{g1}) = 1)}).
   }
   \item{tau}{
     maximum observed follow-up time after selection.  Selection weights
@@ -69,7 +69,7 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
     The value of \code{s} indicating selection.
   }
   \item{trigger}{
-    logical; the value of \code{d} that denotes the post-selection event.
+    The value of \code{d} that denotes the post-selection event.
   }
   \item{groupings}{
     Vector of two elements \code{c(\var{g0},\var{g1})}, the first element \var{g0} being the
@@ -89,9 +89,9 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
     \dQuote{bootstrap}. Currently only works for \dQuote{bootstrap}.
   }
   \item{ci.type}{
-    character vector; type of confidence interval that the corisponding
-    \code{ci} element is refering to.  Can be \code{"upper"},
-    \code{"lower"}, or \code{"twoSided"}.  Defaults to
+    character vector; type of confidence interval that the corresponding
+    \code{ci} element is refering to.  Can be \dQuote{upper},
+    \dQuote{lower}, or \dQuote{twoSided}.  Defaults to
     \code{"twoSided"}.
   }    
   \item{custom.FUN}{
@@ -114,27 +114,29 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   }
   \item{interval}{
     numeric vector of length 2. Controls the range limits used to
-    by optimise to estimate alphahat.
+    by \code{\link{optimize}} to estimate \eqn{\alpha}.
   }
   \item{lowerTest}{
-    logical.  Return the lower one sided p value for SCE. Defaults
+    logical.  Return the lower one sided p-value for SCE. Defaults
     to \code{FALSE}
   }
   \item{upperTest}{
-    logical.  Return the upper one sided p value for SCE. Defaults
+    logical.  Return the upper one sided p-value for SCE. Defaults
     to \code{FALSE}
   }
   \item{twoSidedTest}{
-    logical.  Return a two sided p value for SCE. Defaults
+    logical.  Return a two sided p-value for SCE. Defaults
     to \code{TRUE}
   }
   \item{verbose}{
-    logical;  prints dots when bootstrapping to show that something is happening.
+    logical;  prints dots when bootstrapping to show that something is
+    happening.  Bootstrapping can take a long time.
   }
   \item{inCore}{
     logical; running in memory if \code{TRUE}, running with scratch files if
-    \code{FALSE}.  Default is \code{TRUE}.  For large data analysis, the user may want
-    to switch this to \code{FALSE} to make computations faster.
+    \code{FALSE}.  Default is \code{TRUE}.  For large data analysis, the
+    user may want to switch this to \code{FALSE} to allow for processing
+    on data sets larger than can fit in memory.
   }
   \item{colsPerFile}{
     integer; number of columns of the scratch file to process in each
@@ -145,7 +147,6 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
   }
 }
 \details{
-
   Performs a sensitivity analysis estimating the \dQuote{survival causal
     effect} among those who would have been selected regardless of
   treatment assignment (SCE) without assuming monotonicity (i.e., that
@@ -178,18 +179,9 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
     \code{length(time.points)}, \code{length(beta0)},
     \code{length(beta1)}, \code{length(psi)}.
   }
-  \item{beta0}{
-    \code{beta0} values used.
-  }
-  \item{beta1}{
-    \code{beta1} values used.
-  }
-  \item{psi}{
-    \code{psi} values used.
-  }
   \item{SCE.ci}{
     array; Confidence interval of the SCE value.  Confidence interval
-    determined by \code{quantile} if using  \code{ci.method}
+    determined by \code{\link{quantile}} if using \code{ci.method}
     \dQuote{bootstrap}.  Otherwise calculated using analytic
     variance with large sample normal approximation. Array dimensions the same as element \code{SCE}.
   }
@@ -197,15 +189,30 @@ sensitivitySGD(z, s, d, y, v, beta0, beta1, phi, Pi, psi, tau,
     array; estimated variance of SCE.  Array dimensions the same as
     element \code{SCE}.
   }
+  \item{beta0}{
+    vector; \eqn{\beta} values used for first group.
+  }
+  \item{beta1}{
+    vector; \eqn{\beta} values used for second group.
+  }
+  \item{psi}{
+    vector; \eqn{\psi} values used.
+  }
+  \item{Pi}{
+    vector; \eqn{Pi} values used.
+  }
+  \item{psi}{
+    vector; \eqn{psi} values used.
+  }
   \item{ci.map}{
-    list; mapping of confidence interval to quantile probablity.  Use
-    numbers contained within as indecies to the \code{SCE.ci} element.
+    list; mapping of confidence interval to quantile probability.  Use
+    numbers contained within as indices to the \code{SCE.ci} element.
   }
 }
 \references{
-  Shepherd BE, Gilbert PB, and Dupont CT, "Sensitivity analyses
+  Shepherd BE, Gilbert PB, and Dupont CT, \dQuote{Sensitivity analyses
   comparing time-to-event outcomes only existing in a subset selected
-  postrandomization and relaxing monotonicity," Biometrics, in press.
+  postrandomization and relaxing monotonicity,} Biometrics, in press.
 }
 \author{
   Bryan E. Shepherd \cr
