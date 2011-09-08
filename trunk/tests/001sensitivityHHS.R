@@ -35,8 +35,8 @@ est.bounds<-with(vaccine.trial,
                  sensitivityHHS(z=treatment, s=hiv.outcome, y=logVL,
                      selection="infected", groupings=c("placebo","vaccine"),
                      empty.principal.stratum=c("not infected","infected"),
-                     ci = c(0.95, 0.9), ci.method="bootstrap",
-                     ci.type=c("twoSided", "lower"),
+                     ci = c(0.95, 0.9, 0.9), ci.method="bootstrap",
+                     ci.type=c("twoSided", "lower", "upper"),
                      method=c("ACE", "T1", "T2"), N.boot=100)
                 )
 est.bounds

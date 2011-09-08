@@ -311,6 +311,12 @@ sensitivityJR <- function(z, s, y, beta0, beta1, phi, Pi, psi,
                                 as.character(ci.probs*100)),
                               ci.method=ci.method))
   
+    ci.map <- lapply(ci.map, ci.probs=ci.probs,
+                     ci.prob.names=ACE.ci.dimnames$ci.probs,
+                     FUN=function(map, ci.probs, ci.prob.names) {
+                       ci.prob.names[match(map, ci.probs)]
+                     })
+    
     ACE.ci <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
                     dimnames=ACE.ci.dimnames)
 

@@ -334,14 +334,14 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     T2.var <- temp
 
   if(hasCustomFun && 'bootstrap' %in% ci.method)
-    result <- temp[, "bootstrap", drop=FALSE]
+    result.var <- temp[, "bootstrap", drop=FALSE]
   
   ## Done with temp
   rm(temp)
   
   if(!isSlaveMode) {
     ci.map <- vector('list', length(ci.type))
-    names(ci.map) <- ci
+    names(ci.map) <- sprintf("%s", as.character(ci))
   
     for(i in seq_along(ci.type)) {
       if(ci.type[i] == "upper")
@@ -365,6 +365,12 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
                                 as.character(ci.probs*100)),
                               ci.method=ci.method))
 
+    ci.map <- lapply(ci.map, ci.probs=ci.probs,
+                     ci.prob.names=ACE.ci.dimnames$ci.probs,
+                     FUN=function(map, ci.probs, ci.prob.names) {
+                       ci.prob.names[match(map, ci.probs)]
+                     })
+    
     temp <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
                   dimnames=ACE.ci.dimnames)
 
@@ -601,7 +607,7 @@ sensitivityGBH <- function(z, s, y, beta, selection, groupings,
     }
 
     ## clean up ans.ci ans.var, and method.grid not used again
-    rm(ans.ci, ans.var, ans.p, method.grid)
+    rm(ans.ci, ans.var, ans.p, method.grid, method.index)
   }
 
   if(!isSlaveMode && GroupReverse)

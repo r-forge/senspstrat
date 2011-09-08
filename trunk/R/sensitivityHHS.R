@@ -414,6 +414,12 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                               as.character(ci.probs*100)),
                             ci.method=ci.method))
 
+  ci.map <- lapply(ci.map, ci.probs=ci.probs,
+                   ci.prob.names=ACE.ci.dimnames$ci.probs,
+                   FUN=function(map, ci.probs, ci.prob.names) {
+                     ci.prob.names[match(map, ci.probs)]
+                   })
+    
   temp <- array(numeric(ACE.ci.length), dim=ACE.ci.dim,
                 dimnames=ACE.ci.dimnames)
 
@@ -535,8 +541,9 @@ sensitivityHHS <- function(z, s, y, bound=c("upper","lower"),
                                       result.ci=result.ci[boundIndex,,, drop=FALSE],
                                       result.p=result.p[boundIndex,,, drop=FALSE]),
                 list(ci.map=ci.map, bound=bound[boundIndex],
+                     beta=c(-Inf, Inf)[match(bound, c('upper','lower'))][boundIndex],
                      Fas0=Fas0[boundIndex], Fas1=Fas1[boundIndex])),
-              class=c("sensitivity.0d", "sensitivity"),
+              class=c("sensitivity.1.0d", "sensitivity.0d", "sensitivity"),
               parameters=list(z0=groupings[1], z1=groupings[2],
                 selected=selection, s0=empty.principal.stratum[1],
                 s1=empty.principal.stratum[2]))
